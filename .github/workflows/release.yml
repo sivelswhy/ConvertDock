@@ -1,0 +1,66 @@
+name: Release
+
+# À chaque push sur main : compile ConvertDock et publie une release avec l'app zippée.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sélectionner Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Version
+        id: version
+        run: |
+          BASE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist | cut -d. -f1-2)
+          echo "version=$BASE.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Compiler l'app
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: ./Scripts/build-app.sh
+
+      - name: Vérifier la traduction
+        run: ./Scripts/check-localization.sh
+
+      - name: Empaqueter
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent build/ConvertDock.app "ConvertDock-${{ steps.version.outputs.version }}.zip"
+          shasum -a 256 ConvertDock-*.zip
+
+      - name: Publier la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cat > notes.md <<NOTES
+          ## Installation
+
+          1. Téléchargez **ConvertDock-$VERSION.zip** ci-dessous et décompressez-le.
+          2. Glissez **ConvertDock.app** dans **Applications**.
+          3. Premier lancement : clic droit › **Ouvrir** (l'app est signée ad hoc, pas par un compte développeur).
+
+          Nécessite macOS 26 ou plus récent, Mac Apple Silicon.
+
+          NOTES
+          gh release create "v$VERSION" "ConvertDock-$VERSION.zip" \
+            --title "ConvertDock $VERSION" \
+            --notes-file notes.md \
+            --generate-notes \
+            --target "$GITHUB_SHA"
