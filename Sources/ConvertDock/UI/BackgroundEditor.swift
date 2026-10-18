@@ -173,12 +173,12 @@ enum BackgroundEditor {
     /// Renvoie l'image détourée, ou `nil` si l'utilisateur annule.
     static func present(_ url: URL, image: CGImage, initialMask: [UInt8]?, message: String?) async -> CGImage? {
         let model = MaskEditorModel(image: image, initialMask: initialMask)
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 760),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1060, height: 780),
                               styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = L("Cut out “%@”", url.lastPathComponent)
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 720, height: 520)
+        window.minSize = NSSize(width: 920, height: 560)
         window.level = .floating
         let delegate = Delegate()
         window.delegate = delegate
@@ -294,60 +294,63 @@ private struct MaskEditorView: View {
     }
 
     private var toolbar: some View {
-        GlassEffectContainer(spacing: 4) {
-            HStack(spacing: 12) {
-                // Sélecteur segmenté natif : les trois modes restent bien distincts.
-                Picker(L("Tool"), selection: $model.mode) {
-                    ForEach(MaskEditorModel.Mode.allCases) { mode in
-                        Label(mode.label, systemImage: mode.symbol).tag(mode)
-                    }
+        HStack(spacing: 14) {
+            // Sélecteur segmenté natif : les trois modes restent bien distincts.
+            Picker(L("Tool"), selection: $model.mode) {
+                ForEach(MaskEditorModel.Mode.allCases) { mode in
+                    Label(mode.label, systemImage: mode.symbol).tag(mode)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
 
-                Group {
-                    if model.mode == .wand {
-                        HStack(spacing: 6) {
-                            Text(L("Tolerance")).font(.system(size: 11.5)).foregroundStyle(.secondary)
-                            Slider(value: $model.tolerance, in: 4...120).frame(width: 110)
-                            Toggle(L("Contiguous"), isOn: $model.contiguous)
-                                .toggleStyle(.checkbox)
-                                .font(.system(size: 11.5))
-                        }
-                    } else {
-                        HStack(spacing: 6) {
-                            Text(L("Size")).font(.system(size: 11.5)).foregroundStyle(.secondary)
-                            Slider(value: $model.brushSize, in: 4...300).frame(width: 140)
-                        }
-                    }
+            Divider().frame(height: 22)
+
+            // Réglages du mode courant : libellés jamais tronqués, curseur de largeur fixe.
+            HStack(spacing: 8) {
+                if model.mode == .wand {
+                    Text(L("Tolerance")).foregroundStyle(.secondary).fixedSize()
+                    Slider(value: $model.tolerance, in: 4...120).frame(width: 130)
+                    Toggle(L("Contiguous"), isOn: $model.contiguous)
+                        .toggleStyle(.checkbox)
+                        .fixedSize()
+                } else {
+                    Text(L("Size")).foregroundStyle(.secondary).fixedSize()
+                    Slider(value: $model.brushSize, in: 4...300).frame(width: 160)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .glassEffect(.regular, in: .capsule)
+            }
+            .font(.system(size: 12))
+            .controlSize(.small)
+            .layoutPriority(1)
 
-                Spacer(minLength: 0)
+            Spacer(minLength: 8)
 
+            HStack(spacing: 8) {
                 Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                    .buttonStyle(.glass)
                     .disabled(!model.canUndo)
                     .keyboardShortcut("z")
                     .help(L("Undo (⌘Z)"))
                 Button { model.invert() } label: { Image(systemName: "circle.lefthalf.filled.inverse") }
-                    .buttonStyle(.glass)
                     .help(L("Invert selection"))
                 Button { model.reset() } label: { Image(systemName: "arrow.counterclockwise") }
-                    .buttonStyle(.glass)
                     .help(L("Reset all"))
-                Button(L("Cancel"), action: onCancel)
-                    .buttonStyle(.glass)
-                    .keyboardShortcut(.cancelAction)
-                Button(L("Save"), action: onDone)
-                    .buttonStyle(.glassProminent)
-                    .keyboardShortcut(.defaultAction)
             }
-            .controlSize(.large)
+            .buttonStyle(.glass)
+
+            Button(L("Cancel"), action: onCancel)
+                .buttonStyle(.glass)
+                .keyboardShortcut(.cancelAction)
+            Button(L("Save"), action: onDone)
+                .buttonStyle(.glassProminent)
+                .keyboardShortcut(.defaultAction)
         }
+        .controlSize(.large)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .fixedSize(horizontal: false, vertical: true)
+        .glassEffect(.regular, in: .capsule)
     }
 }
 
