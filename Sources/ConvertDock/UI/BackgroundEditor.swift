@@ -10,9 +10,9 @@ final class MaskEditorModel {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .wand: "Baguette magique"
-            case .erase: "Gomme"
-            case .restore: "Restaurer"
+            case .wand: L("Magic wand")
+            case .erase: L("Eraser")
+            case .restore: L("Restore")
             }
         }
         var symbol: String {
@@ -175,7 +175,7 @@ enum BackgroundEditor {
         let model = MaskEditorModel(image: image, initialMask: initialMask)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 760),
                               styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
-        window.title = "Détourer « \(url.lastPathComponent) »"
+        window.title = L("Cut out “%@”", url.lastPathComponent)
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: 720, height: 520)
@@ -294,36 +294,30 @@ private struct MaskEditorView: View {
     }
 
     private var toolbar: some View {
-        GlassEffectContainer(spacing: 12) {
+        GlassEffectContainer(spacing: 4) {
             HStack(spacing: 12) {
-                HStack(spacing: 4) {
+                // Sélecteur segmenté natif : les trois modes restent bien distincts.
+                Picker(L("Tool"), selection: $model.mode) {
                     ForEach(MaskEditorModel.Mode.allCases) { mode in
-                        Button {
-                            model.mode = mode
-                        } label: {
-                            Label(mode.label, systemImage: mode.symbol)
-                                .font(.system(size: 12, weight: model.mode == mode ? .semibold : .regular))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .foregroundStyle(model.mode == mode ? Color.white : Color.primary)
-                        }
-                        .buttonStyle(.plain)
-                        .glassEffect(model.mode == mode ? .regular.tint(.purple.opacity(0.85)).interactive() : .regular.interactive(), in: .capsule)
+                        Label(mode.label, systemImage: mode.symbol).tag(mode)
                     }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
 
                 Group {
                     if model.mode == .wand {
                         HStack(spacing: 6) {
-                            Text("Tolérance").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            Text(L("Tolerance")).font(.system(size: 11.5)).foregroundStyle(.secondary)
                             Slider(value: $model.tolerance, in: 4...120).frame(width: 110)
-                            Toggle("Zone contiguë", isOn: $model.contiguous)
+                            Toggle(L("Contiguous"), isOn: $model.contiguous)
                                 .toggleStyle(.checkbox)
                                 .font(.system(size: 11.5))
                         }
                     } else {
                         HStack(spacing: 6) {
-                            Text("Taille").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            Text(L("Size")).font(.system(size: 11.5)).foregroundStyle(.secondary)
                             Slider(value: $model.brushSize, in: 4...300).frame(width: 140)
                         }
                     }
@@ -338,17 +332,17 @@ private struct MaskEditorView: View {
                     .buttonStyle(.glass)
                     .disabled(!model.canUndo)
                     .keyboardShortcut("z")
-                    .help("Annuler (⌘Z)")
+                    .help(L("Undo (⌘Z)"))
                 Button { model.invert() } label: { Image(systemName: "circle.lefthalf.filled.inverse") }
                     .buttonStyle(.glass)
-                    .help("Inverser la sélection")
+                    .help(L("Invert selection"))
                 Button { model.reset() } label: { Image(systemName: "arrow.counterclockwise") }
                     .buttonStyle(.glass)
-                    .help("Tout réinitialiser")
-                Button("Annuler", action: onCancel)
+                    .help(L("Reset all"))
+                Button(L("Cancel"), action: onCancel)
                     .buttonStyle(.glass)
                     .keyboardShortcut(.cancelAction)
-                Button("Enregistrer", action: onDone)
+                Button(L("Save"), action: onDone)
                     .buttonStyle(.glassProminent)
                     .keyboardShortcut(.defaultAction)
             }

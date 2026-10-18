@@ -8,17 +8,17 @@ import Vision
 enum VisionTools {
     static var all: [Tool] {
         [
-            Tool(id: "ai.removebg", title: "Supprimer l'arrière-plan", subtitle: "Détourage automatique du sujet → PNG",
+            Tool(id: "ai.removebg", title: "Remove background", subtitle: "Automatic subject cutout → PNG",
                  symbol: "person.crop.circle.badge.minus", category: .intelligence, inputs: [.image],
                  keywords: ["background", "remover", "détourer", "fond", "transparent", "arrière-plan", "remove bg"]) { inputs, ctx in
                 try await inputs.asyncMap { url in
                     let image = try await removeBackgroundOrAsk(url, crop: false)
-                    let out = ctx.output(for: url, ext: "png", suffix: "détouré")
+                    let out = ctx.output(for: url, ext: "png", suffix: L("cutout"))
                     try ImageIOHelpers.write(image, to: out, type: .png)
                     return out
                 }
             },
-            Tool(id: "ai.removebg.crop", title: "Détourer et recadrer", subtitle: "Sujet isolé, cadré au plus près",
+            Tool(id: "ai.removebg.crop", title: "Cut out and crop", subtitle: "Isolated subject, tightly cropped",
                  symbol: "crop", category: .intelligence, inputs: [.image],
                  keywords: ["background", "remover", "sticker", "autocollant", "recadrer", "fond"]) { inputs, ctx in
                 try await inputs.asyncMap { url in
@@ -28,23 +28,23 @@ enum VisionTools {
                     return out
                 }
             },
-            Tool(id: "ai.removebg.manual", title: "Détourage manuel", subtitle: "Baguette magique et pinceau, pour retoucher",
+            Tool(id: "ai.removebg.manual", title: "Manual cutout", subtitle: "Magic wand and brush, for touch-ups",
                  symbol: "wand.and.stars", category: .intelligence, inputs: [.image],
                  keywords: ["background", "remover", "fond", "détourer", "détourage", "baguette", "magique", "pinceau", "gomme", "manuel", "retoucher", "sélectionner"]) { inputs, ctx in
                 try await inputs.asyncMap { url in
-                    guard await isInteractive else { throw ToolError.unsupported("Le détourage manuel nécessite l'interface graphique.") }
+                    guard await isInteractive else { throw ToolError.unsupported(L("Manual cutout requires the graphical interface.")) }
                     let image = try ImageIOHelpers.load(url, maxPixelSize: editorMaxSize)
                     let mask = try? subjectMask(image)
                     guard let result = await BackgroundEditor.present(
                         url, image: image, initialMask: mask,
-                        message: mask == nil ? "Cliquez sur l'arrière-plan avec la baguette magique pour le supprimer." : nil
+                        message: mask == nil ? L("Click the background with the magic wand to remove it.") : nil
                     ) else { throw CancellationError() }
-                    let out = ctx.output(for: url, ext: "png", suffix: "détouré")
+                    let out = ctx.output(for: url, ext: "png", suffix: L("cutout"))
                     try ImageIOHelpers.write(result, to: out, type: .png)
                     return out
                 }
             },
-            Tool(id: "ai.vectorize.color", title: "Vectoriser en SVG (couleur)", subtitle: "PNG/JPEG → SVG, 8 couleurs",
+            Tool(id: "ai.vectorize.color", title: "Vectorize to SVG (color)", subtitle: "PNG/JPEG → SVG, 8 colors",
                  symbol: "scribble.variable", category: .intelligence, inputs: [.image], excludes: [.svg],
                  keywords: ["svg", "vecteur", "vectoriser", "tracer", "png to svg", "vector", "trace"]) { inputs, ctx in
                 try inputs.map { url in
@@ -53,16 +53,16 @@ enum VisionTools {
                     return out
                 }
             },
-            Tool(id: "ai.vectorize.mono", title: "Vectoriser en SVG (noir & blanc)", subtitle: "Idéal pour logos et dessins",
+            Tool(id: "ai.vectorize.mono", title: "Vectorize to SVG (black & white)", subtitle: "Great for logos and drawings",
                  symbol: "signature", category: .intelligence, inputs: [.image], excludes: [.svg],
                  keywords: ["svg", "vecteur", "vectoriser", "logo", "png to svg", "silhouette", "trace"]) { inputs, ctx in
                 try inputs.map { url in
-                    let out = ctx.output(for: url, ext: "svg", suffix: "N&B")
+                    let out = ctx.output(for: url, ext: "svg", suffix: L("B&W"))
                     try Vectorizer.vectorize(url, to: out, colors: 1, progress: ctx.progress)
                     return out
                 }
             },
-            Tool(id: "ai.ocr", title: "Extraire le texte (OCR)", subtitle: "Reconnaissance de texte → .txt",
+            Tool(id: "ai.ocr", title: "Extract text (OCR)", subtitle: "Text recognition → .txt",
                  symbol: "text.viewfinder", category: .intelligence, inputs: [.image],
                  keywords: ["ocr", "texte", "reconnaissance", "scanner", "copier", "lire"]) { inputs, ctx in
                 try inputs.map { url in
@@ -72,17 +72,17 @@ enum VisionTools {
                     return out
                 }
             },
-            Tool(id: "ai.blurfaces", title: "Flouter les visages", subtitle: "Anonymise automatiquement une photo",
+            Tool(id: "ai.blurfaces", title: "Blur faces", subtitle: "Automatically anonymizes a photo",
                  symbol: "eye.slash", category: .intelligence, inputs: [.image],
                  keywords: ["flou", "visage", "anonymiser", "blur", "face", "vie privée"]) { inputs, ctx in
                 try inputs.map { url in
                     let (type, ext) = ImageIOHelpers.sameFormat(for: url)
-                    let out = ctx.output(for: url, ext: ext, suffix: "anonymisé")
+                    let out = ctx.output(for: url, ext: ext, suffix: L("anonymized"))
                     try ImageIOHelpers.write(try blurFaces(try ImageIOHelpers.load(url)), to: out, type: type, quality: 0.92)
                     return out
                 }
             },
-            Tool(id: "ai.upscale", title: "Agrandir ×2", subtitle: "Mise à l'échelle Lanczos haute qualité",
+            Tool(id: "ai.upscale", title: "Upscale ×2", subtitle: "High-quality Lanczos upscaling",
                  symbol: "arrow.up.left.and.arrow.down.right", category: .intelligence, inputs: [.image],
                  keywords: ["upscale", "agrandir", "résolution", "zoom", "x2"]) { inputs, ctx in
                 try inputs.map { url in
@@ -116,7 +116,7 @@ enum VisionTools {
             let image = try ImageIOHelpers.load(url, maxPixelSize: editorMaxSize)
             guard let result = await BackgroundEditor.present(
                 url, image: image, initialMask: nil,
-                message: "Aucun sujet détecté automatiquement. Cliquez sur l'arrière-plan avec la baguette magique pour le supprimer."
+                message: L("No subject was detected automatically. Click the background with the magic wand to remove it.")
             ) else { throw CancellationError() }
             return crop ? cropToContent(result) : result
         }
@@ -178,7 +178,7 @@ enum VisionTools {
         request.automaticallyDetectsLanguage = true
         try VNImageRequestHandler(cgImage: image).perform([request])
         let lines = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
-        guard !lines.isEmpty else { throw ToolError.failed("Aucun texte détecté.") }
+        guard !lines.isEmpty else { throw ToolError.failed(L("No text detected.")) }
         return lines.joined(separator: "\n")
     }
 
@@ -186,7 +186,7 @@ enum VisionTools {
         let request = VNDetectFaceRectanglesRequest()
         try VNImageRequestHandler(cgImage: image).perform([request])
         let faces = request.results ?? []
-        guard !faces.isEmpty else { throw ToolError.failed("Aucun visage détecté.") }
+        guard !faces.isEmpty else { throw ToolError.failed(L("No face detected.")) }
 
         let base = CIImage(cgImage: image)
         let w = CGFloat(image.width), h = CGFloat(image.height)

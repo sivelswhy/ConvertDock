@@ -4,7 +4,7 @@ import SwiftUI
 /// Champ de recherche en capsule de verre.
 struct GlassSearchField: View {
     @Binding var text: String
-    var placeholder = "Rechercher une action…"
+    var placeholder = L("Search for an action…")
     var height: CGFloat = 40
     var focus: FocusState<Bool>.Binding
 
@@ -68,9 +68,9 @@ struct CategoryChips: View {
         ScrollView(.horizontal, showsIndicators: false) {
             GlassEffectContainer(spacing: 8) {
                 HStack(spacing: 6) {
-                    chip(nil, label: "Tout", symbol: "square.grid.2x2")
+                    chip(nil, label: L("All"), symbol: "square.grid.2x2")
                     ForEach(categories) { category in
-                        chip(category, label: category.rawValue, symbol: category.symbol)
+                        chip(category, label: category.displayName, symbol: category.symbol)
                     }
                 }
                 .padding(.vertical, 4)
@@ -195,7 +195,7 @@ struct JobRow: View {
                 }
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(job.tool.title)
+                Text(job.tool.displayTitle)
                     .font(.system(size: 12.5, weight: .semibold))
                     .lineLimit(1)
                 Text(detail)
@@ -214,11 +214,11 @@ struct JobRow: View {
 
     private var detail: String {
         switch job.state {
-        case .configuring: "En attente de réglages…"
-        case .running: job.inputs.count == 1 ? job.inputs[0].lastPathComponent : "\(job.inputs.count) fichiers"
-        case .succeeded(let urls): urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) fichiers créés"
+        case .configuring: L("Waiting for settings…")
+        case .running: job.inputs.count == 1 ? job.inputs[0].lastPathComponent : L("%d files", job.inputs.count)
+        case .succeeded(let urls): urls.count == 1 ? urls[0].lastPathComponent : L("%d files created", urls.count)
         case .failed(let message): message
-        case .cancelled: "Annulé"
+        case .cancelled: L("Cancelled")
         }
     }
 
@@ -231,7 +231,7 @@ struct JobRow: View {
                 Button { job.cancel() } label: { Image(systemName: "xmark") }
                     .buttonStyle(.glass)
                     .controlSize(.small)
-                    .help("Annuler")
+                    .help(L("Cancel"))
             }
         case .succeeded(let urls):
             HStack(spacing: 6) {
@@ -239,23 +239,23 @@ struct JobRow: View {
                     Button { Task { await AppModel.shared.retouch(job) } } label: { Image(systemName: "wand.and.stars") }
                         .buttonStyle(.glass)
                         .controlSize(.small)
-                        .help("Retoucher le détourage")
+                        .help(L("Touch up the cutout"))
                 }
                 if job.showsImagePreview {
                     Button { AppModel.shared.preview = job } label: { Image(systemName: "eye") }
                         .buttonStyle(.glass)
                         .controlSize(.small)
-                        .help("Voir le résultat")
+                        .help(L("View result"))
                 }
                 if urls.count == 1 {
-                    Button("Ouvrir") { NSWorkspace.shared.open(urls[0]) }
+                    Button(L("Open")) { NSWorkspace.shared.open(urls[0]) }
                         .buttonStyle(.glass)
                         .controlSize(.small)
                 }
                 Button { NSWorkspace.shared.activateFileViewerSelecting(urls) } label: { Image(systemName: "folder") }
                     .buttonStyle(.glass)
                     .controlSize(.small)
-                    .help("Afficher dans le Finder")
+                    .help(L("Show in Finder"))
             }
         case .failed:
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
@@ -282,7 +282,7 @@ extension URL {
 extension Array where Element == URL {
     /// Résumé lisible d'une sélection : « photo.png » ou « 3 fichiers ».
     var selectionTitle: String {
-        count == 1 ? self[0].lastPathComponent : "\(count) fichiers"
+        count == 1 ? self[0].lastPathComponent : L("%d files", count)
     }
 }
 

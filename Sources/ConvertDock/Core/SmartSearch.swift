@@ -27,8 +27,8 @@ enum SmartSearch {
             if let target = intent.target, let alternative = alternatives[target] {
                 let alt = prioritized(tools.filter { matches($0, Intent(source: intent.source, target: alternative)) })
                 if !alt.isEmpty {
-                    let reason = unsupportedOutputs[target] ?? "format indisponible"
-                    return Result(tools: alt, note: "Pas de sortie \(target.uppercased()) : \(reason). Voici l'équivalent en \(alternative.uppercased()).")
+                    let reason = unsupportedOutputs[target] ?? L("format unavailable")
+                    return Result(tools: alt, note: L("No %@ output: %@. Here is the %@ equivalent.", target.uppercased(), reason, alternative.uppercased()))
                 }
             }
 
@@ -39,13 +39,14 @@ enum SmartSearch {
                     .flatMap(outputFormats)).subtracting(families.keys).sorted()
                 let reason = unsupportedOutputs[target].map { " (\($0))" } ?? ""
                 let note = available.isEmpty
-                    ? "Aucune conversion depuis \(source.uppercased()) pour l'instant."
-                    : "Pas de conversion directe \(source.uppercased()) → \(target.uppercased())\(reason). Sorties possibles : \(available.map { $0.uppercased() }.joined(separator: ", "))."
+                    ? L("No conversion from %@ yet.", source.uppercased())
+                    : L("No direct %@ → %@ conversion%@. Available outputs: %@.", source.uppercased(), target.uppercased(), reason,
+                        available.map { $0.uppercased() }.joined(separator: ", "))
                 return Result(tools: fromSource, note: note)
             }
             if let target = intent.target, let reason = unsupportedOutputs[target] {
                 return Result(tools: tools.filter { $0.matches(strippingFillers(query)) },
-                              note: "Pas de sortie \(target.uppercased()) : \(reason).")
+                              note: L("No %@ output: %@.", target.uppercased(), reason))
             }
         }
         return Result(tools: tools.filter { $0.matches(strippingFillers(trimmed)) })
@@ -87,7 +88,7 @@ enum SmartSearch {
     private static let separators: Set<String> = ["to", "vers", "en", "into", "in", "a", "au", "pour"]
 
     private static let fillers: Set<String> = [
-        "convertir", "convert", "conversion", "transformer", "changer", "un", "une", "le", "la", "les", "l", "des",
+        "convertir", "convert", "conversion", "into", "a", "an", "the", "my", "file", "transformer", "changer", "un", "une", "le", "la", "les", "l", "des",
         "de", "du", "d", "fichier", "fichiers", "file", "files", "mon", "ma", "mes", "en", "to", "vers",
     ]
 
@@ -109,7 +110,7 @@ enum SmartSearch {
         "h264": "mp4", "h265": "hevc", "x265": "hevc", "heif": "heic", "mpeg4": "mp4", "excel": "csv", "tableur": "csv",
         "photo": "image", "photos": "image", "images": "image", "picture": "image", "img": "image",
         "videos": "video", "film": "video", "movie": "video", "son": "audio", "musique": "audio", "music": "audio",
-        "sound": "audio", "icone": "icns", "icon": "icns", "favicon": "ico", "vecteur": "svg", "vector": "svg",
+        "sound": "audio", "pictures": "image", "videos ": "video", "icone": "icns", "icon": "icns", "favicon": "ico", "vecteur": "svg", "vector": "svg",
         "vectoriel": "svg", "archive": "zip", "plist": "plist", "propertylist": "plist", "gif anime": "gif",
         "documents": "document", "doc": "doc", "odf": "odt", "opendocument": "odt", "libreoffice": "odt",
     ]
@@ -132,21 +133,23 @@ enum SmartSearch {
     ]
 
     /// Formats que macOS ne sait pas produire nativement.
-    private static let unsupportedOutputs: [String: String] = [
-        "mp3": "macOS n'encode pas le MP3 nativement",
-        "webp": "macOS ne sait pas écrire le WebP",
-        "ogg": "format non pris en charge par macOS",
-        "opus": "format non pris en charge par macOS",
-        "mkv": "conteneur non pris en charge par macOS",
-        "avi": "conteneur non pris en charge par macOS",
-        "webm": "conteneur non pris en charge par macOS",
-        "wmv": "format Windows non pris en charge",
-        "wma": "format Windows non pris en charge",
-        "rar": "format propriétaire",
-        "7z": "format non pris en charge",
-        "epub": "non pris en charge pour l'instant",
-        "pages": "format propriétaire d'Apple",
-    ]
+    private static var unsupportedOutputs: [String: String] {
+        [
+            "mp3": L("macOS cannot encode MP3 natively"),
+            "webp": L("macOS cannot write WebP"),
+            "ogg": L("format not supported by macOS"),
+            "opus": L("format not supported by macOS"),
+            "mkv": L("container not supported by macOS"),
+            "avi": L("container not supported by macOS"),
+            "webm": L("container not supported by macOS"),
+            "wmv": L("Windows format not supported"),
+            "wma": L("Windows format not supported"),
+            "rar": L("proprietary format"),
+            "7z": L("format not supported"),
+            "epub": L("not supported yet"),
+            "pages": L("Apple's proprietary format"),
+        ]
+    }
 
     // MARK: Correspondance avec les outils
 

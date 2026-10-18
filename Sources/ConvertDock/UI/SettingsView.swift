@@ -9,24 +9,24 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Fichiers créés") {
-                Picker("Enregistrer", selection: $location) {
+            Section(L("Created files")) {
+                Picker(L("Save to"), selection: $location) {
                     ForEach(OutputLocation.allCases) { Text($0.label).tag($0.rawValue) }
                 }
-                Toggle("Afficher dans le Finder à la fin", isOn: $revealWhenDone)
-                Toggle("Jouer un son à la fin", isOn: $playSound)
+                Toggle(L("Reveal in Finder when done"), isOn: $revealWhenDone)
+                Toggle(L("Play a sound when done"), isOn: $playSound)
             }
-            Section("Panneau rapide") {
-                Toggle("Fermer le panneau dès que c'est terminé", isOn: $closePanelWhenDone)
-                LabeledContent("Raccourci sur le Bureau") {
-                    Button("Créer") { createDesktopAlias() }
+            Section(L("Quick panel")) {
+                Toggle(L("Close the panel when done"), isOn: $closePanelWhenDone)
+                LabeledContent(L("Desktop shortcut")) {
+                    Button(L("Create")) { createDesktopAlias() }
                 }
                 if let aliasMessage {
                     Text(aliasMessage).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Section {
-                Text("Déposez n'importe quel fichier sur l'icône de ConvertDock (Dock ou Bureau) pour ouvrir le menu d'actions. Vous pouvez aussi faire clic droit › Services › « Convertir avec ConvertDock » dans le Finder.")
+                Text(L("Drop any file on the ConvertDock icon (Dock or Desktop) to open the actions menu. You can also right-click › Services › “Convert with ConvertDock” in the Finder."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -41,12 +41,12 @@ struct SettingsView: View {
             let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
             let link = desktop.appendingPathComponent("ConvertDock")
             if FileManager.default.fileExists(atPath: link.path) {
-                aliasMessage = "Un raccourci existe déjà sur le Bureau."
+                aliasMessage = L("A shortcut already exists on the Desktop.")
                 return
             }
             let data = try Bundle.main.bundleURL.bookmarkData(options: .suitableForBookmarkFile)
             try URL.writeBookmarkData(data, to: link)
-            aliasMessage = "Raccourci créé : déposez vos fichiers dessus."
+            aliasMessage = L("Shortcut created: drop your files on it.")
         } catch {
             aliasMessage = error.localizedDescription
         }

@@ -26,8 +26,8 @@ struct ResultPreview: View {
                             .interpolation(.high)
                             .mask(alignment: .leading) { Rectangle().frame(width: fit.width * split) }
                         divider(fit)
-                        badge("Avant").padding(10)
-                        badge("Après").padding(10).frame(maxWidth: .infinity, alignment: .trailing)
+                        badge(L("Before")).padding(10)
+                        badge(L("After")).padding(10).frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
                 .frame(width: fit.width, height: fit.height)
@@ -98,7 +98,7 @@ struct ResultSheet: View {
             HStack(spacing: 12) {
                 ToolIcon(tool: job.tool, size: 34)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(job.tool.title).font(.system(size: 15, weight: .semibold))
+                    Text(job.tool.displayTitle).font(.system(size: 15, weight: .semibold))
                     if let url = job.outputs.first {
                         Text("\(url.lastPathComponent) · \(url.formattedSize)")
                             .font(.system(size: 12))
@@ -127,17 +127,17 @@ struct ResultActions: View {
         GlassEffectContainer(spacing: 10) {
             HStack(spacing: 10) {
                 if let onBack {
-                    Button(action: onBack) { Label("Autre action", systemImage: "chevron.left") }
+                    Button(action: onBack) { Label(L("Other action"), systemImage: "chevron.left") }
                         .buttonStyle(.glass)
                 }
                 if job.tool.isRetouchable {
                     Button {
                         Task { await AppModel.shared.retouch(job) }
                     } label: {
-                        Label("Retoucher", systemImage: "wand.and.stars")
+                        Label(L("Touch up"), systemImage: "wand.and.stars")
                     }
                     .buttonStyle(.glass)
-                    .help("Pas satisfait ? Détourez vous-même avec la baguette magique et le pinceau")
+                    .help(L("Not happy? Cut it out yourself with the magic wand and brush"))
                 }
                 Spacer(minLength: 0)
                 Button { NSWorkspace.shared.activateFileViewerSelecting(job.outputs) } label: { Label("Finder", systemImage: "folder") }
@@ -147,12 +147,12 @@ struct ResultActions: View {
                         NSWorkspace.shared.open(job.outputs[0])
                         onClose?()
                     } label: {
-                        Label("Ouvrir", systemImage: "arrow.up.forward.app")
+                        Label(L("Open"), systemImage: "arrow.up.forward.app")
                     }
                     .buttonStyle(.glass)
                 }
                 if let onClose {
-                    Button("OK", action: onClose)
+                    Button(L("OK"), action: onClose)
                         .buttonStyle(.glassProminent)
                         .keyboardShortcut(.defaultAction)
                 }

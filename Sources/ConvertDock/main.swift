@@ -3,7 +3,7 @@ import AppKit
 let app = NSApplication.shared
 let arguments = CommandLine.arguments
 
-if arguments.contains("--list") || arguments.contains("--run") || arguments.contains("--search") {
+if arguments.contains("--list") || arguments.contains("--run") || arguments.contains("--search") || arguments.contains("--l10n-keys") {
     // Mode ligne de commande : `ConvertDock --list` ou `ConvertDock --run <id-outil> [--trim début fin] fichiers…`
     app.setActivationPolicy(.prohibited)
     Task { @MainActor in

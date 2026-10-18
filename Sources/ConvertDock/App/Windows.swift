@@ -115,7 +115,7 @@ final class QuickPanelController: NSObject, NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         // Juste après l'ouverture, l'activation de l'app peut rendre une autre fenêtre active : on reprend le focus.
-        if Date().timeIntervalSince(shownAt) < 0.8 {
+        if Date().timeIntervalSince(shownAt) < 1.5 {
             DispatchQueue.main.async { [weak self] in self?.panel?.makeKeyAndOrderFront(nil) }
             return
         }
@@ -176,7 +176,7 @@ final class SettingsWindowController {
     func show() {
         if window == nil {
             let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
-            window.title = "Réglages"
+            window.title = L("Settings")
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()

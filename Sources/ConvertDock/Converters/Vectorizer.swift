@@ -13,9 +13,9 @@ enum Vectorizer {
     static func vectorize(_ url: URL, to out: URL, colors: Int, progress: @Sendable (Double) -> Void) throws {
         let image = try ImageIOHelpers.load(url, maxPixelSize: 1024)
         let w = image.width, h = image.height
-        guard let ctx = ImageIOHelpers.context(width: w, height: h) else { throw ToolError.failed("Mémoire insuffisante.") }
+        guard let ctx = ImageIOHelpers.context(width: w, height: h) else { throw ToolError.failed(L("Not enough memory.")) }
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
-        guard let data = ctx.data else { throw ToolError.failed("Lecture des pixels impossible.") }
+        guard let data = ctx.data else { throw ToolError.failed(L("Could not read pixels.")) }
         let pixels = data.bindMemory(to: UInt8.self, capacity: w * h * 4)
         let count = w * h
 

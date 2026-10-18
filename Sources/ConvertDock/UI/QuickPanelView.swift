@@ -118,7 +118,7 @@ struct QuickPanelView: View {
                     .truncationMode(.middle)
                 Text(model.urls.count == 1
                      ? [model.urls[0].contentType?.localizedDescription, model.urls[0].formattedSize].compactMap { $0 }.joined(separator: " · ")
-                     : "\(model.compatible.count) actions disponibles")
+                     : L("%d actions available", model.compatible.count))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -130,7 +130,7 @@ struct QuickPanelView: View {
             }
             .buttonStyle(.plain)
             .glassEffect(.regular.interactive(), in: .circle)
-            .help("Fermer (Échap)")
+            .help(L("Close (Esc)"))
         }
     }
 
@@ -140,14 +140,14 @@ struct QuickPanelView: View {
                 LazyVStack(alignment: .leading, spacing: 2, pinnedViews: []) {
                     if model.sections.isEmpty {
                         ContentUnavailableView(
-                            model.compatible.isEmpty ? "Aucune action pour ce fichier" : "Aucun résultat",
+                            model.compatible.isEmpty ? L("No actions for this file") : L("No results"),
                             systemImage: model.compatible.isEmpty ? "questionmark.folder" : "magnifyingglass",
-                            description: Text(model.compatible.isEmpty ? "Ce type de fichier n'est pas encore pris en charge." : "Essayez un autre mot-clé.")
+                            description: Text(model.compatible.isEmpty ? L("This file type is not supported yet.") : L("Try another keyword."))
                         )
                         .padding(.top, 60)
                     }
                     ForEach(model.sections, id: \.0) { category, tools in
-                        Text(category.rawValue.uppercased())
+                        Text(category.displayName.uppercased())
                             .font(.system(size: 10.5, weight: .semibold))
                             .tracking(0.6)
                             .foregroundStyle(.secondary)
@@ -184,9 +184,9 @@ private struct QuickToolRow: View {
         HStack(spacing: 12) {
             ToolIcon(tool: tool, size: 32)
             VStack(alignment: .leading, spacing: 1) {
-                Text(tool.title)
+                Text(tool.displayTitle)
                     .font(.system(size: 13.5, weight: .medium))
-                Text(tool.subtitle)
+                Text(tool.displaySubtitle)
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
             }
@@ -238,7 +238,7 @@ private struct JobResultView: View {
                     .font(.system(size: 24))
                     .foregroundStyle(.green)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(job.tool.title).font(.system(size: 15, weight: .semibold))
+                    Text(job.tool.displayTitle).font(.system(size: 15, weight: .semibold))
                     Text(subtitle)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
@@ -313,21 +313,21 @@ private struct JobResultView: View {
 
     private var title: String {
         switch job.state {
-        case .configuring: "Réglez la découpe…"
-        case .running: job.tool.title
-        case .succeeded: "Terminé"
-        case .failed: "Échec"
-        case .cancelled: "Annulé"
+        case .configuring: L("Set the trim…")
+        case .running: job.tool.displayTitle
+        case .succeeded: L("Done")
+        case .failed: L("Failed")
+        case .cancelled: L("Cancelled")
         }
     }
 
     private var subtitle: String {
         switch job.state {
-        case .configuring: "Déplacez les poignées jaunes puis cliquez sur « Couper »."
-        case .running: job.progress > 0 ? "\(Int(job.progress * 100)) %" : "Traitement en cours…"
-        case .succeeded(let urls): urls.count == 1 ? "\(urls[0].lastPathComponent) · \(urls[0].formattedSize)" : "\(urls.count) fichiers créés"
+        case .configuring: L("Drag the yellow handles, then click “Trim”.")
+        case .running: job.progress > 0 ? L("%d%%", Int(job.progress * 100)) : L("Processing…")
+        case .succeeded(let urls): urls.count == 1 ? "\(urls[0].lastPathComponent) · \(urls[0].formattedSize)" : L("%d files created", urls.count)
         case .failed(let message): message
-        case .cancelled: "Aucun fichier n'a été créé."
+        case .cancelled: L("No file was created.")
         }
     }
 
@@ -336,21 +336,21 @@ private struct JobResultView: View {
             HStack(spacing: 10) {
                 switch job.state {
                 case .configuring, .running:
-                    Button("Annuler", role: .cancel) { job.cancel() }
+                    Button(L("Cancel"), role: .cancel) { job.cancel() }
                         .buttonStyle(.glass)
                         .controlSize(.large)
                 case .succeeded(let urls):
-                    Button { model.job = nil } label: { Label("Autre action", systemImage: "chevron.left") }
+                    Button { model.job = nil } label: { Label(L("Other action"), systemImage: "chevron.left") }
                         .buttonStyle(.glass)
                     Button { NSWorkspace.shared.activateFileViewerSelecting(urls) } label: { Label("Finder", systemImage: "folder") }
                         .buttonStyle(.glass)
                     if urls.count == 1 {
-                        Button { NSWorkspace.shared.open(urls[0]); model.onClose() } label: { Label("Ouvrir", systemImage: "arrow.up.forward.app") }
+                        Button { NSWorkspace.shared.open(urls[0]); model.onClose() } label: { Label(L("Open"), systemImage: "arrow.up.forward.app") }
                             .buttonStyle(.glassProminent)
                             .keyboardShortcut(.defaultAction)
                     }
                 case .failed, .cancelled:
-                    Button { model.job = nil } label: { Label("Retour", systemImage: "chevron.left") }
+                    Button { model.job = nil } label: { Label(L("Back"), systemImage: "chevron.left") }
                         .buttonStyle(.glassProminent)
                         .keyboardShortcut(.defaultAction)
                 }

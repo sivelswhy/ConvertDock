@@ -1,56 +1,65 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="Icône ConvertDock">
+  <img src="docs/icon.png" width="128" alt="ConvertDock icon">
 </p>
 
 <h1 align="center">ConvertDock</h1>
 
 <p align="center">
-  <b>Le convertisseur de fichiers natif pour macOS, en Liquid Glass.</b><br>
-  Déposez un fichier sur l'icône → choisissez une action → c'est fait.<br>
-  77 outils · 100 % local · aucune dépendance
+  <b>A native macOS file converter, built with Liquid Glass.</b><br>
+  Drop a file on the icon → pick an action → done.<br>
+  78 tools · 100% on-device · zero dependencies · English & Français
 </p>
 
 <p align="center">
-  <img src="docs/main-window.png" width="820" alt="Fenêtre principale de ConvertDock">
+  <img src="docs/main-window.png" width="820" alt="ConvertDock main window">
 </p>
 
-## Le principe
+<p align="center"><a href="#français">🇫🇷 Version française plus bas</a></p>
 
-- **Déposez un fichier sur l'icône** de ConvertDock (dans le Dock ou sur le Bureau) : un panneau en verre s'ouvre avec **toutes les conversions possibles** pour ce fichier.
-- **Tapez pour chercher** (`svg`, `détourer`, `mp4`, `compresser`…), naviguez avec **↑ ↓**, lancez avec **↩**, fermez avec **Échap**.
-- Ou utilisez la fenêtre principale : glisser-déposer, recherche, filtres par catégorie, historique des tâches.
-- Aussi dans le Finder : clic droit › **Services** › **Convertir avec ConvertDock**.
+## How it works
+
+- **Drop a file on the ConvertDock icon** (in the Dock or on your Desktop): a glass panel opens with **every conversion available** for that file.
+- **Type to search** — it understands natural queries like `pdf to png`, `wav vers mp3`, `heic en jpg`, `mov → mp4`, `pdf2png`. When a format can't be produced natively (MP3, WebP, MKV…), it tells you why and offers the closest equivalent.
+- Navigate with **↑ ↓**, run with **↩**, close with **Esc**.
+- Or use the main window: drag & drop, search, category filters, job history.
+- In Finder: right-click › **Services** › **Convert with ConvertDock**.
 
 <p align="center">
-  <img src="docs/quick-panel.png" width="420" alt="Panneau rapide">
+  <img src="docs/quick-panel.png" width="400" alt="Quick panel">
+  &nbsp;
+  <img src="docs/before-after.png" width="400" alt="Before / after preview">
 </p>
 
-Tout est fait **sur votre Mac** grâce aux frameworks d'Apple (Vision, Core Image, ImageIO, AVFoundation, PDFKit, AppKit). Aucun fichier n'est envoyé sur Internet.
+Everything runs **on your Mac** using Apple frameworks (Vision, Core Image, ImageIO, AVFoundation, AVKit, PDFKit, AppKit). No file ever leaves your computer.
 
-## Les outils
+## Tools
 
-| Catégorie | Actions |
+| Category | Actions |
 |---|---|
-| ✨ **Intelligence** | Supprimer l'arrière-plan · Détourer et recadrer (sticker) · **PNG → SVG** couleur et noir & blanc · OCR (image → texte) · Flouter les visages · Agrandir ×2 · Rendre un PDF cherchable (OCR) |
-| 🖼️ **Images** | Convertir en PNG, JPEG, HEIC, AVIF, TIFF, GIF, BMP, ICO, PSD, PDF · Icône macOS `.icns` · Réduire, redimensionner (1920 / 1080 / 512 px) · Compresser · Noir et blanc · Pivoter · Miroir · Supprimer EXIF/GPS · Assembler en PDF · Créer un GIF animé · Extraire les frames d'un GIF |
-| 🎬 **Vidéo** | **Couper (trim)** · MP4 (H.264) · HEVC (H.265) · MOV · M4V · 1080p · 720p · 480p · Extraire l'audio · Vidéo → GIF · Capturer une image |
-| 🎧 **Audio** | **Couper (trim)** · M4A (AAC) · WAV · AIFF · CAF · FLAC · Apple Lossless |
-| 📄 **Documents** | Markdown, RTF, DOCX, DOC, ODT, HTML, TXT → PDF, Word, ODT, RTF, HTML, TXT · Markdown → HTML stylé · Code → PDF · Compter les mots |
-| 📕 **PDF** | PDF → PNG / JPEG / TXT / RTF · Fusionner · Séparer les pages · Compresser · Pivoter |
-| `{}` **Données** | JSON ⇄ Plist · JSON ⇄ CSV · Formater / minifier le JSON · Base64 · SHA-256 |
-| 🗜️ **Archives** | Compresser en ZIP · Décompresser (zip, tar, gz…) |
+| ✨ **AI** | Remove background · Cut out and crop (sticker) · **Manual cutout** (magic wand, eraser, restore brush) · **PNG → SVG** in color or black & white · OCR (image → text) · Blur faces · Upscale ×2 · Make a PDF searchable |
+| 🖼️ **Images** | Convert to PNG, JPEG, HEIC, AVIF, TIFF, GIF, BMP, ICO, PSD, PDF · macOS `.icns` icon · Shrink, resize (1920 / 1080 / 512 px) · Compress · Black & white · Rotate · Flip · Strip EXIF/GPS · Combine into a PDF · Animated GIF · Extract GIF frames |
+| 🎬 **Video** | **Trim** · MP4 (H.264) · HEVC (H.265) · MOV · M4V · 1080p · 720p · 480p · Extract audio · Video → GIF · Capture a frame |
+| 🎧 **Audio** | **Trim** · M4A (AAC) · WAV · AIFF · CAF · FLAC · Apple Lossless |
+| 📄 **Documents** | Markdown, RTF, DOCX, DOC, ODT, HTML, TXT → PDF, Word, ODT, RTF, HTML, TXT · Markdown → styled HTML · Code → PDF · Word count |
+| 📕 **PDF** | PDF → PNG / JPEG / TXT / RTF · Merge · Split pages · Compress · Rotate |
+| `{}` **Data** | JSON ⇄ Plist · JSON ⇄ CSV · Format / minify JSON · Base64 · SHA-256 |
+| 🗜️ **Archives** | Compress to ZIP · Decompress (zip, tar, gz…) |
 
-### Trim audio / vidéo
+### Results you can check — and fix
 
-« Couper » ouvre l'éditeur de découpe natif de macOS (celui de QuickTime Player) : déplacez les poignées jaunes puis cliquez sur **Couper**. MOV / MP4 / M4V sont coupés **sans réencodage** (instantané, sans perte), WAV / AIFF / CAF / FLAC à l'échantillon près dans leur format d'origine.
+Every tool that produces an image shows the result right away with a **before / after slider**. After a background removal, **Touch up** opens the manual cutout editor pre-filled with the automatic result. If no subject is detected at all, the editor opens by itself so you can click the background away with the magic wand.
+
+### Trim audio & video
+
+**Trim** opens macOS's native trimming UI (the one from QuickTime Player). MOV / MP4 / M4V are cut **without re-encoding** (instant and lossless); WAV / AIFF / CAF / FLAC are cut sample-accurately in their original format.
 
 ### PNG → SVG
 
-La vectorisation quantifie les couleurs (k-means), trace les contours de chaque couleur avec Vision (`VNDetectContoursRequest`), les simplifie puis les lisse en courbes de Bézier en conservant les angles vifs. Idéal pour les logos, icônes et illustrations en aplats.
+The vectorizer quantizes colors (k-means), traces each color layer with Vision (`VNDetectContoursRequest`), simplifies the contours and smooths them into Bézier curves while keeping sharp corners. Great for logos, icons and flat illustrations.
 
-## Installation
+## Install
 
-Il faut **macOS 26 (Tahoe) ou plus récent** et les outils de développement (Xcode ou simplement `xcode-select --install`).
+Requires **macOS 26 (Tahoe) or later** and the developer tools (Xcode, or just `xcode-select --install`).
 
 ```bash
 git clone https://github.com/sivelswhy/ConvertDock.git
@@ -58,59 +67,81 @@ cd ConvertDock
 make install
 ```
 
-`make install` compile l'app en release, l'installe dans `/Applications`, l'enregistre auprès de macOS (dépôt sur l'icône, service Finder) et crée un **raccourci sur le Bureau**. Pour ne pas créer le raccourci : `NO_DESKTOP_ALIAS=1 make install`.
-
-Autres commandes :
+`make install` builds a release app, installs it in `/Applications`, registers it with macOS (drop-on-icon, Finder service) and creates a **Desktop shortcut**. To skip the shortcut: `NO_DESKTOP_ALIAS=1 make install`.
 
 ```bash
-make app     # construit build/ConvertDock.app
-make run     # construit puis lance l'app
-make logos   # régénère les propositions de logo dans ./Logos
+make app     # build build/ConvertDock.app
+make run     # build and launch
+make logos   # regenerate the logo proposals into ./Logos
 ```
 
-> L'app est signée « ad hoc ». Si macOS refuse de l'ouvrir après un téléchargement, faites clic droit › Ouvrir.
+> The app is ad-hoc signed. If macOS refuses to open it after a download, right-click › Open.
 
-## Ligne de commande
-
-Le binaire sait aussi s'utiliser dans un terminal ou un script :
+## Command line
 
 ```bash
 CD=/Applications/ConvertDock.app/Contents/MacOS/ConvertDock
-$CD --list                                    # liste les outils et leurs identifiants
-$CD --run ai.removebg photo.jpg               # supprime l'arrière-plan
+$CD --list                                    # list tools and their identifiers
+$CD --search "wav to mp3"                     # try the smart search
+$CD --run ai.removebg photo.jpg               # remove background
 $CD --run ai.vectorize.color logo.png         # PNG → SVG
-$CD --run video.trim --trim 12.5 30 film.mov  # garde de 12,5 s à 30 s
-$CD --run pdf.merge a.pdf b.pdf c.pdf         # fusionne
+$CD --run video.trim --trim 12.5 30 film.mov  # keep 12.5 s → 30 s
+$CD --run pdf.merge a.pdf b.pdf c.pdf         # merge
 ```
 
-## Réglages
+## Settings
 
-- Emplacement des fichiers créés : à côté de l'original (par défaut), Téléchargements ou Bureau
-- Afficher dans le Finder à la fin, son de fin
-- Fermer automatiquement le panneau rapide une fois terminé
+- Where to save results: next to the original (default), Downloads or Desktop
+- Reveal in Finder when done, completion sound
+- Auto-close the quick panel when done
+
+## Localization
+
+Source strings are English; translations live in `Resources/<lang>.lproj/Localizable.strings` (French included). The app follows the system language.
+
+```bash
+./Scripts/check-localization.sh   # lists keys missing from the French file
+python3 Scripts/fr-translations.py  # regenerates fr.lproj/Localizable.strings
+```
+
+Search works in both languages whatever the UI language: French keywords (`détourer`, `compresser`, `vers`, `en`…) and English ones are all understood.
 
 ## Architecture
 
 ```
 Sources/ConvertDock/
-├── App/          Cycle de vie AppKit, menus, panneau flottant (NSGlassEffectView), CLI
-├── Core/         Modèle Tool, registre, exécution des tâches, emplacement de sortie
-├── Converters/   Un fichier par famille : images, Vision, vectorisation, vidéo, audio, trim, documents, PDF, données, archives
-└── UI/           Vues SwiftUI en Liquid Glass (glassEffect, GlassEffectContainer, boutons .glass)
+├── App/          AppKit lifecycle, menus, floating glass panel (NSGlassEffectView), CLI
+├── Core/         Tool model, registry, smart search, job runner, output location
+├── Converters/   One file per family: images, Vision, vectorizer, video, audio, trim, documents, PDF, data, archives
+└── UI/           Liquid Glass SwiftUI views, before/after preview, cutout editor, trim editor
 ```
 
-Ajouter un outil = ajouter un `Tool` (titre, symbole SF, types acceptés, mots-clés, fonction `run`) dans l'un des fichiers de `Converters/`. Il apparaît automatiquement dans la recherche, la grille et le panneau rapide pour les fichiers compatibles.
+Adding a tool = adding a `Tool` (English title, SF Symbol, accepted types, keywords, `run` function) in one of the `Converters/` files, plus its French translation. It automatically shows up in search, the grid and the quick panel for compatible files.
 
-> Le projet se compile avec les seuls Command Line Tools : `@State` étant une macro dans le SDK macOS 27 (plugin fourni avec Xcode uniquement), les vues utilisent l'alias `ViewState`, qui pointe directement vers le property wrapper.
+> The project builds with Command Line Tools only: since `@State` is a macro in the macOS 27 SDK (whose plugin ships with Xcode), views use the `ViewState` alias that points straight at the property wrapper.
 
 ## Logo
 
-Six propositions sont générées par `Scripts/generate-logos.swift` (la n° 1 est l'icône actuelle) :
+Six proposals are generated by `Scripts/generate-logos.swift` (#1 is the current icon):
 
 <p align="center">
-  <img src="docs/logos.png" width="820" alt="Propositions de logo">
+  <img src="docs/logos.png" width="820" alt="Logo proposals">
 </p>
 
-## Licence
+---
+
+## Français
+
+**ConvertDock** est un convertisseur de fichiers natif pour macOS, en Liquid Glass, entièrement traduit en français (l'app suit la langue du système).
+
+- **Déposez un fichier sur l'icône** (Dock ou Bureau) : un panneau en verre propose toutes les conversions possibles.
+- **Recherche naturelle** : « pdf en png », « wav vers mp3 », « heic en jpg »… Si un format n'est pas disponible nativement (MP3, WebP…), l'app l'explique et propose l'équivalent.
+- **78 outils** : détourage automatique et manuel, PNG → SVG, OCR, conversions d'images, vidéo, audio, documents, PDF, données, archives, **trim audio/vidéo**.
+- **Aperçu avant/après** de chaque résultat image, et bouton **Retoucher** après un détourage.
+- 100 % local, aucune dépendance.
+
+Installation : `git clone https://github.com/sivelswhy/ConvertDock.git && cd ConvertDock && make install` (macOS 26 minimum).
+
+## License
 
 MIT

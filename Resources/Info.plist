@@ -19,7 +19,12 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>fr</string>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>fr</string>
+	</array>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSApplicationCategoryType</key>
@@ -27,13 +32,13 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Licence MIT</string>
-	<!-- Accepte n'importe quel fichier déposé sur l'icône (Dock, Bureau, Finder), sans devenir l'app par défaut. -->
+	<string>MIT License</string>
+	<!-- Accepts any file dropped on the icon (Dock, Desktop, Finder) without becoming the default app. -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>Tous les fichiers</string>
+			<string>All files</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
@@ -47,14 +52,14 @@
 			</array>
 		</dict>
 	</array>
-	<!-- Clic droit › Services › Convertir avec ConvertDock -->
+	<!-- Right-click › Services › Convert with ConvertDock -->
 	<key>NSServices</key>
 	<array>
 		<dict>
 			<key>NSMenuItem</key>
 			<dict>
 				<key>default</key>
-				<string>Convertir avec ConvertDock</string>
+				<string>Convert with ConvertDock</string>
 			</dict>
 			<key>NSMessage</key>
 			<string>convertFiles</string>

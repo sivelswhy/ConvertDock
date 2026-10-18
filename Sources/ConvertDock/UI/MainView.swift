@@ -65,14 +65,14 @@ struct MainView: View {
     private var topBar: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                GlassSearchField(text: $query, placeholder: "Rechercher : pdf en png, wav vers m4a, détourer, svg…", height: 40, focus: $searchFocused)
+                GlassSearchField(text: $query, placeholder: L("Search: pdf to png, wav to m4a, remove background, svg…"), height: 40, focus: $searchFocused)
                 Button(action: openFiles) {
-                    Label("Ouvrir", systemImage: "plus")
+                    Label(L("Open"), systemImage: "plus")
                         .frame(height: 26)
                 }
                 .buttonStyle(.glassProminent)
                 .controlSize(.large)
-                .help("Choisir des fichiers (⌘O)")
+                .help(L("Choose files (⌘O)"))
             }
             .padding(.leading, 70) // laisse la place aux boutons de fenêtre
             CategoryChips(categories: categories, selection: $category)
@@ -88,9 +88,9 @@ struct MainView: View {
                     .font(.system(size: 26, weight: .light))
                     .foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Déposez des fichiers ici")
+                    Text(L("Drop files here"))
                         .font(.system(size: 15, weight: .semibold))
-                    Text("ou directement sur l'icône de ConvertDock dans le Dock ou sur le Bureau")
+                    Text(L("or directly on the ConvertDock icon in the Dock or on the Desktop"))
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -115,11 +115,11 @@ struct MainView: View {
                     }
                     .padding(4)
                 }
-                Text("\(results.count) actions")
+                Text(L("%d actions", results.count))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
                     .fixedSize()
-                Button("Effacer") { withAnimation(.smooth) { model.files.removeAll() } }
+                Button(L("Clear")) { withAnimation(.smooth) { model.files.removeAll() } }
                     .buttonStyle(.glass)
             }
             .padding(8)
@@ -133,9 +133,9 @@ struct MainView: View {
         ScrollView {
             if results.isEmpty {
                 ContentUnavailableView(
-                    available.isEmpty ? "Aucune action pour ces fichiers" : "Aucun résultat pour « \(query) »",
+                    available.isEmpty ? L("No actions for these files") : L("No results for “%@”", query),
                     systemImage: "magnifyingglass",
-                    description: Text(available.isEmpty ? "Ce type de fichier n'est pas encore pris en charge." : "Essayez « svg », « mp4 », « pdf »…")
+                    description: Text(available.isEmpty ? L("This file type is not supported yet.") : L("Try “svg”, “mp4”, “pdf”…"))
                 )
                 .padding(.top, 80)
             }
@@ -144,7 +144,7 @@ struct MainView: View {
                     let tools = results.filter { $0.category == category }
                     if !tools.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
-                            Label(category.rawValue, systemImage: category.symbol)
+                            Label(category.displayName, systemImage: category.symbol)
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, 4)
@@ -162,7 +162,10 @@ struct MainView: View {
             .padding(.top, 2)
         }
         .scrollIndicators(.automatic)
-        .scrollClipDisabled()
+        // Le contenu reste sous la barre du haut : fondu doux au lieu d'une superposition.
+        .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.025),
+                                     .init(color: .black, location: 1)],
+                             startPoint: .top, endPoint: .bottom))
         .animation(.smooth(duration: 0.3), value: results.map(\.id))
     }
 
@@ -171,10 +174,10 @@ struct MainView: View {
     private var activityTray: some View {
         VStack(spacing: 0) {
             HStack {
-                Label("Activité", systemImage: "clock.arrow.circlepath")
+                Label(L("Activity"), systemImage: "clock.arrow.circlepath")
                     .font(.system(size: 12.5, weight: .semibold))
                 Spacer()
-                Button("Effacer") { withAnimation { model.clearFinishedJobs() } }
+                Button(L("Clear")) { withAnimation { model.clearFinishedJobs() } }
                     .buttonStyle(.plain)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
@@ -211,7 +214,7 @@ struct MainView: View {
             .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [10, 8]))
             .background(Color.accentColor.opacity(0.08), in: .rect(cornerRadius: 26))
             .overlay {
-                Label("Déposer pour convertir", systemImage: "arrow.down.circle.fill")
+                Label(L("Drop to convert"), systemImage: "arrow.down.circle.fill")
                     .font(.system(size: 20, weight: .semibold))
                     .padding(.horizontal, 22)
                     .padding(.vertical, 14)
@@ -237,7 +240,7 @@ struct MainView: View {
             panel.allowsMultipleSelection = true
             panel.canChooseDirectories = tool.inputs.contains(.item)
             panel.allowedContentTypes = tool.inputs
-            panel.message = tool.title
+            panel.message = tool.displayTitle
             guard panel.runModal() == .OK, tool.accepts(all: panel.urls) else { return }
             AppModel.shared.run(tool, on: panel.urls, presentResult: true)
         } else {
@@ -265,10 +268,10 @@ private struct ToolCard: View {
             HStack(spacing: 12) {
                 ToolIcon(tool: tool, size: 40)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(tool.title)
+                    Text(tool.displayTitle)
                         .font(.system(size: 13, weight: .semibold))
                         .lineLimit(1)
-                    Text(tool.subtitle)
+                    Text(tool.displaySubtitle)
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -289,7 +292,7 @@ private struct ToolCard: View {
         .scaleEffect(hovering ? 1.015 : 1)
         .animation(.snappy(duration: 0.18), value: hovering)
         .onHover { hovering = $0 }
-        .help(ready ? "Lancer sur les fichiers sélectionnés" : "Choisir un fichier puis lancer")
+        .help(ready ? L("Run on the selected files") : L("Choose a file, then run"))
     }
 }
 

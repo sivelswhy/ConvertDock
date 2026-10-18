@@ -40,7 +40,7 @@ enum ImageTools {
         var tools = targets.map { target in
             Tool(
                 id: "image.to.\(target.ext)",
-                title: "Convertir en \(target.name)",
+                title: "Convert to \(target.name)",
                 subtitle: "Image → .\(target.ext)",
                 symbol: "photo.on.rectangle.angled",
                 category: .image,
@@ -62,8 +62,8 @@ enum ImageTools {
 
         tools.append(Tool(
             id: "image.to.icns",
-            title: "Créer une icône macOS (.icns)",
-            subtitle: "Toutes les tailles de 16 à 1024 px",
+            title: "Create a macOS icon (.icns)",
+            subtitle: "Every size from 16 to 1024 px",
             symbol: "app.badge",
             category: .image,
             inputs: [.image, svg],
@@ -82,8 +82,8 @@ enum ImageTools {
 
         tools.append(Tool(
             id: "image.to.pdf",
-            title: "Convertir en PDF",
-            subtitle: "Une page par image",
+            title: "Convert to PDF",
+            subtitle: "One page per image",
             symbol: "doc.richtext",
             category: .image,
             inputs: [.image, svg],
@@ -99,8 +99,8 @@ enum ImageTools {
 
         tools.append(Tool(
             id: "image.gif.frames",
-            title: "Extraire les images du GIF",
-            subtitle: "Chaque frame en PNG",
+            title: "Extract GIF frames",
+            subtitle: "Each frame as PNG",
             symbol: "square.stack.3d.down.right",
             category: .image,
             inputs: [.gif],
@@ -110,7 +110,7 @@ enum ImageTools {
             for url in inputs {
                 guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { throw ToolError.unreadable(url) }
                 let count = CGImageSourceGetCount(source)
-                let folder = OutputLocation.uniqueURL(in: OutputLocation.current.directory(for: url), stem: "\(url.baseName) frames", ext: "")
+                let folder = OutputLocation.uniqueURL(in: OutputLocation.current.directory(for: url), stem: "\(url.baseName) \(L("frames"))", ext: "")
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
                 for index in 0..<count {
                     guard let frame = CGImageSourceCreateImageAtIndex(source, index, nil) else { continue }
@@ -146,41 +146,41 @@ enum ImageTools {
 
     private static var transforms: [Tool] {
         [
-            transform(id: "image.half", title: "Réduire de moitié", subtitle: "50 % de la taille",
+            transform(id: "image.half", title: "Shrink by half", subtitle: "50% of the size",
                       symbol: "arrow.down.right.and.arrow.up.left", keywords: ["redimensionner", "resize", "réduire", "50"],
                       suffix: "50%") { ImageIOHelpers.scaled($0, by: 0.5) },
-            transform(id: "image.resize.1920", title: "Redimensionner à 1920 px", subtitle: "Côté le plus long",
+            transform(id: "image.resize.1920", title: "Resize to 1920 px", subtitle: "Longest side",
                       symbol: "aspectratio", keywords: ["redimensionner", "resize", "full hd", "1080p"],
                       suffix: "1920") { ImageIOHelpers.resize($0, maxSide: 1920) },
-            transform(id: "image.resize.1080", title: "Redimensionner à 1080 px", subtitle: "Idéal pour les réseaux sociaux",
+            transform(id: "image.resize.1080", title: "Resize to 1080 px", subtitle: "Great for social media",
                       symbol: "aspectratio", keywords: ["redimensionner", "resize", "instagram"],
                       suffix: "1080") { ImageIOHelpers.resize($0, maxSide: 1080) },
-            transform(id: "image.thumb", title: "Miniature 512 px", subtitle: "Petite vignette PNG",
+            transform(id: "image.thumb", title: "512 px thumbnail", subtitle: "Small PNG thumbnail",
                       symbol: "photo.badge.checkmark", keywords: ["miniature", "thumbnail", "vignette"],
-                      suffix: "miniature", forceType: (.png, "png")) { ImageIOHelpers.resize($0, maxSide: 512) },
-            transform(id: "image.compress", title: "Compresser", subtitle: "JPEG qualité 60 %, poids réduit",
+                      suffix: L("thumbnail"), forceType: (.png, "png")) { ImageIOHelpers.resize($0, maxSide: 512) },
+            transform(id: "image.compress", title: "Compress", subtitle: "60% quality JPEG, smaller file",
                       symbol: "arrow.down.circle", keywords: ["compresser", "compress", "optimiser", "poids", "léger"],
-                      suffix: "compressé", forceType: (.jpeg, "jpg"), quality: 0.6) { $0 },
-            transform(id: "image.mono", title: "Noir et blanc", subtitle: "Filtre monochrome",
+                      suffix: L("compressed"), forceType: (.jpeg, "jpg"), quality: 0.6) { $0 },
+            transform(id: "image.mono", title: "Black and white", subtitle: "Monochrome filter",
                       symbol: "circle.lefthalf.filled", keywords: ["noir", "blanc", "gris", "grayscale", "mono"],
-                      suffix: "N&B") { image in
+                      suffix: L("B&W")) { image in
                 let filter = CIFilter.photoEffectNoir()
                 filter.inputImage = CIImage(cgImage: image)
                 return try ImageIOHelpers.render(filter.outputImage!)
             },
-            transform(id: "image.rotate", title: "Pivoter de 90°", subtitle: "Sens horaire",
+            transform(id: "image.rotate", title: "Rotate 90°", subtitle: "Clockwise",
                       symbol: "rotate.right", keywords: ["rotation", "pivoter", "tourner"],
-                      suffix: "pivoté") { image in
+                      suffix: L("rotated")) { image in
                 try ImageIOHelpers.render(CIImage(cgImage: image).oriented(.right))
             },
-            transform(id: "image.flip", title: "Miroir horizontal", subtitle: "Retourner l'image",
+            transform(id: "image.flip", title: "Flip horizontally", subtitle: "Mirror the image",
                       symbol: "arrow.left.and.right.righttriangle.left.righttriangle.right", keywords: ["miroir", "flip", "retourner"],
-                      suffix: "miroir") { image in
+                      suffix: L("mirrored")) { image in
                 try ImageIOHelpers.render(CIImage(cgImage: image).oriented(.upMirrored))
             },
-            transform(id: "image.strip", title: "Supprimer les métadonnées", subtitle: "Retire EXIF, GPS et appareil",
+            transform(id: "image.strip", title: "Remove metadata", subtitle: "Strips EXIF, GPS and camera info",
                       symbol: "location.slash", keywords: ["exif", "gps", "métadonnées", "vie privée", "metadata"],
-                      suffix: "sans métadonnées") { $0 },
+                      suffix: L("no metadata")) { $0 },
         ]
     }
 
@@ -188,18 +188,18 @@ enum ImageTools {
 
     private static var combined: [Tool] {
         [
-            Tool(id: "image.merge.pdf", title: "Assembler en un seul PDF", subtitle: "Toutes les images, une par page",
+            Tool(id: "image.merge.pdf", title: "Combine into one PDF", subtitle: "All images, one per page",
                  symbol: "doc.on.doc", category: .image, inputs: [.image, svg],
                  keywords: ["pdf", "fusionner", "assembler", "combiner", "merge"], combinesInputs: true, minimumInputs: 2) { inputs, ctx in
-                let out = ctx.output(for: inputs[0], ext: "pdf", suffix: inputs.count > 1 ? "et \(inputs.count - 1) autres" : nil)
+                let out = ctx.output(for: inputs[0], ext: "pdf", suffix: inputs.count > 1 ? L("and %d more", inputs.count - 1) : nil)
                 try makePDF(from: inputs, to: out)
                 return [out]
             },
-            Tool(id: "image.merge.gif", title: "Créer un GIF animé", subtitle: "Les images deviennent des frames",
+            Tool(id: "image.merge.gif", title: "Create an animated GIF", subtitle: "Images become frames",
                  symbol: "play.square.stack", category: .image, inputs: [.image],
                  keywords: ["gif", "animation", "animé", "diaporama"], combinesInputs: true, minimumInputs: 2) { inputs, ctx in
                 let frames = try inputs.map { try ImageIOHelpers.load($0, maxPixelSize: 800) }
-                let out = ctx.output(for: inputs[0], ext: "gif", suffix: "animé")
+                let out = ctx.output(for: inputs[0], ext: "gif", suffix: L("animated"))
                 try ImageIOHelpers.writeMulti(frames, to: out, type: .gif, frameDelay: 0.5)
                 return [out]
             },
@@ -211,9 +211,9 @@ enum ImageTools {
         for url in urls {
             let image = try ImageIOHelpers.load(url)
             let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
-            guard let page = PDFPage(image: nsImage) else { throw ToolError.failed("Impossible de créer la page PDF.") }
+            guard let page = PDFPage(image: nsImage) else { throw ToolError.failed(L("Could not create the PDF page.")) }
             document.insert(page, at: document.pageCount)
         }
-        guard document.write(to: out) else { throw ToolError.failed("Échec de l'écriture du PDF.") }
+        guard document.write(to: out) else { throw ToolError.failed(L("Failed to write the PDF.")) }
     }
 }

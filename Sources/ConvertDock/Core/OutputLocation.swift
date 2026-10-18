@@ -12,9 +12,9 @@ enum OutputLocation: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .sameFolder: "À côté du fichier d'origine"
-        case .downloads: "Dossier Téléchargements"
-        case .desktop: "Bureau"
+        case .sameFolder: L("Next to the original file")
+        case .downloads: L("Downloads folder")
+        case .desktop: L("Desktop")
         }
     }
 

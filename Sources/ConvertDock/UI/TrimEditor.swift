@@ -17,7 +17,7 @@ enum TrimEditor {
         let size = hasVideo ? NSSize(width: 820, height: 520) : NSSize(width: 640, height: 150)
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
                               styleMask: [.titled, .fullSizeContentView, .resizable], backing: .buffered, defer: false)
-        window.title = "Couper « \(url.lastPathComponent) »"
+        window.title = L("Trim “%@”", url.lastPathComponent)
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.level = .floating

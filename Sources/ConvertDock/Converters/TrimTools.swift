@@ -5,13 +5,13 @@ import UniformTypeIdentifiers
 enum TrimTools {
     static var all: [Tool] {
         [
-            Tool(id: "video.trim", title: "Couper la vidéo (trim)", subtitle: "Choisir le début et la fin",
+            Tool(id: "video.trim", title: "Trim video", subtitle: "Pick the start and end",
                  symbol: "timeline.selection", category: .video, inputs: [.movie],
                  keywords: ["trim", "couper", "découper", "rogner", "raccourcir", "extrait", "cut"],
                  configure: { url in await TrimEditor.present(url) }) { inputs, ctx in
                 try await inputs.asyncMap { url in try await trimVideo(url, ctx: ctx) }
             },
-            Tool(id: "audio.trim", title: "Couper l'audio (trim)", subtitle: "Choisir le début et la fin",
+            Tool(id: "audio.trim", title: "Trim audio", subtitle: "Pick the start and end",
                  symbol: "waveform.badge.minus", category: .audio, inputs: [.audio],
                  keywords: ["trim", "couper", "découper", "rogner", "raccourcir", "extrait", "sonnerie", "cut"],
                  configure: { url in await TrimEditor.present(url) }) { inputs, ctx in
@@ -36,7 +36,7 @@ enum TrimTools {
         case "m4v": (AVAssetExportPresetPassthrough, .m4v, "m4v")
         default: (AVAssetExportPresetHighestQuality, .mp4, "mp4")
         }
-        let out = ctx.output(for: url, ext: outExt, suffix: "extrait")
+        let out = ctx.output(for: url, ext: outExt, suffix: L("trimmed"))
         try await VideoTools.exportAsset(asset, preset: preset, to: out, type: type,
                                          timeRange: timeRange(ctx.parameters), progress: ctx.progress)
         return out
@@ -47,7 +47,7 @@ enum TrimTools {
         let p = ctx.parameters
         // Formats lisibles en PCM : découpe à l'échantillon près dans le même format.
         if ["wav", "aif", "aiff", "caf", "flac"].contains(ext) {
-            let out = ctx.output(for: url, ext: ext, suffix: "extrait")
+            let out = ctx.output(for: url, ext: ext, suffix: L("trimmed"))
             let source = try AVAudioFile(forReading: url)
             var settings = source.fileFormat.settings
             settings.removeValue(forKey: AVSampleRateKey)
@@ -56,7 +56,7 @@ enum TrimTools {
             try AudioTools.transcode(url, to: out, settings: settings, range: range, progress: ctx.progress)
             return out
         }
-        let out = ctx.output(for: url, ext: "m4a", suffix: "extrait")
+        let out = ctx.output(for: url, ext: "m4a", suffix: L("trimmed"))
         try await VideoTools.exportAsset(AVURLAsset(url: url), preset: AVAssetExportPresetAppleM4A, to: out, type: .m4a,
                                          timeRange: timeRange(p), progress: ctx.progress)
         return out

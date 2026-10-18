@@ -6,19 +6,25 @@ enum CommandLineInterface {
     static func run(_ args: [String]) async -> Int32 {
         if args.first == "--list" {
             for tool in ToolRegistry.all {
-                print("\(tool.id.padding(toLength: 22, withPad: " ", startingAt: 0)) \(tool.category.rawValue.padding(toLength: 13, withPad: " ", startingAt: 0)) \(tool.title)")
+                print("\(tool.id.padding(toLength: 22, withPad: " ", startingAt: 0)) \(tool.category.rawValue.padding(toLength: 13, withPad: " ", startingAt: 0)) \(tool.displayTitle)")
             }
+            return 0
+        }
+        if args.first == "--l10n-keys" {
+            // Clés affichées dynamiquement (titres d'outils, catégories), pour vérifier les traductions.
+            let keys = ToolCategory.allCases.map(\.rawValue) + ToolRegistry.all.flatMap { [$0.title, $0.subtitle] }
+            for key in NSOrderedSet(array: keys) { print(key) }
             return 0
         }
         if args.first == "--search", args.count > 1 {
             let result = SmartSearch.search(ToolRegistry.all, query: args[1...].joined(separator: " "))
             if let note = result.note { print("💡 \(note)") }
-            for tool in result.tools { print("\(tool.id) — \(tool.title)") }
+            for tool in result.tools { print("\(tool.id) — \(tool.displayTitle)") }
             return 0
         }
         var rest = Array(args.drop { $0 != "--run" }.dropFirst())
         guard let id = rest.first, let tool = ToolRegistry.all.first(where: { $0.id == id }) else {
-            fputs("Outil inconnu. Utilisez --list pour voir les identifiants.\n", stderr)
+            fputs(L("Unknown tool. Use --list to see the identifiers.") + "\n", stderr)
             return 2
         }
         rest.removeFirst()
@@ -30,7 +36,7 @@ enum CommandLineInterface {
         }
         let urls = rest.map { URL(fileURLWithPath: $0).standardizedFileURL }
         guard tool.accepts(all: urls) else {
-            fputs("« \(tool.title) » n'accepte pas ces fichiers.\n", stderr)
+            fputs(L("“%@” does not accept these files.", tool.displayTitle) + "\n", stderr)
             return 2
         }
         let groups: [[URL]] = tool.combinesInputs ? [urls] : urls.map { [$0] }
@@ -41,7 +47,7 @@ enum CommandLineInterface {
             }
             return 0
         } catch {
-            fputs("Erreur : \(error.localizedDescription)\n", stderr)
+            fputs(L("Error: %@", error.localizedDescription) + "\n", stderr)
             return 1
         }
     }

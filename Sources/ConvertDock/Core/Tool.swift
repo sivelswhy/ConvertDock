@@ -4,16 +4,18 @@ import UniformTypeIdentifiers
 
 /// Grandes familles d'outils, utilisées pour le filtrage et le regroupement.
 enum ToolCategory: String, CaseIterable, Identifiable, Sendable {
-    case intelligence = "Intelligence"
+    case intelligence = "AI"
     case image = "Images"
-    case video = "Vidéo"
+    case video = "Video"
     case audio = "Audio"
     case document = "Documents"
     case pdf = "PDF"
-    case data = "Données"
+    case data = "Data"
     case archive = "Archives"
 
     var id: String { rawValue }
+
+    var displayName: String { L(rawValue) }
 
     var symbol: String {
         switch self {
@@ -132,14 +134,29 @@ struct Tool: Identifiable, Hashable, Sendable {
     }
 
     /// Recherche tolérante : insensible à la casse et aux accents, tous les mots doivent correspondre.
+    var displayTitle: String { L(title) }
+    var displaySubtitle: String { L(subtitle) }
+
     func matches(_ query: String) -> Bool {
         let terms = query.searchNormalized.split(separator: " ")
         guard !terms.isEmpty else { return true }
-        let haystack = ([title, subtitle, category.rawValue] + keywords)
+        // Recherche dans les deux langues : textes anglais d'origine, traductions et mots-clés.
+        let haystack = ([title, subtitle, displayTitle, displaySubtitle, category.rawValue, category.displayName] + keywords)
             .joined(separator: " ")
             .searchNormalized
         return terms.allSatisfy { haystack.contains($0) }
     }
+}
+
+/// Chaîne traduite. Les textes sources sont en anglais ; les traductions sont dans
+/// `Resources/<langue>.lproj/Localizable.strings` (actuellement le français).
+func L(_ key: String) -> String {
+    NSLocalizedString(key, bundle: .main, comment: "")
+}
+
+/// Chaîne traduite avec arguments au format `String(format:)` (`%@`, `%d`…).
+func L(_ key: String, _ arguments: CVarArg...) -> String {
+    String(format: L(key), locale: .current, arguments: arguments)
 }
 
 extension String {
@@ -167,10 +184,10 @@ enum ToolError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unreadable(let url): "Impossible de lire « \(url.lastPathComponent) »."
+        case .unreadable(let url): L("Could not read “%@”.", url.lastPathComponent)
         case .unsupported(let message): message
         case .failed(let message): message
-        case .noSubject(let url): "Aucun sujet détecté dans « \(url.lastPathComponent) »."
+        case .noSubject(let url): L("No subject detected in “%@”.", url.lastPathComponent)
         }
     }
 }

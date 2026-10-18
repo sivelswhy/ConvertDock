@@ -40,18 +40,18 @@ enum ImageIOHelpers {
         let needsOpaque = type.conforms(to: .jpeg) || type == .bmp
         let finalImage = needsOpaque ? flatten(image) : image
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil) else {
-            throw ToolError.unsupported("Le format \(type.preferredFilenameExtension ?? type.identifier) n'est pas pris en charge en écriture.")
+            throw ToolError.unsupported(L("Writing %@ is not supported.", type.preferredFilenameExtension ?? type.identifier))
         }
         var props: [CFString: Any] = [:]
         if let quality { props[kCGImageDestinationLossyCompressionQuality] = quality }
         CGImageDestinationAddImage(dest, finalImage, props as CFDictionary)
-        guard CGImageDestinationFinalize(dest) else { throw ToolError.failed("Échec de l'écriture de \(url.lastPathComponent).") }
+        guard CGImageDestinationFinalize(dest) else { throw ToolError.failed(L("Failed to write %@.", url.lastPathComponent)) }
     }
 
     /// Écrit plusieurs images dans un même fichier (GIF animé, ICNS, ICO, TIFF multipage).
     static func writeMulti(_ images: [CGImage], to url: URL, type: UTType, frameDelay: Double? = nil) throws {
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, images.count, nil) else {
-            throw ToolError.unsupported("Format non pris en charge.")
+            throw ToolError.unsupported(L("Unsupported format."))
         }
         if let frameDelay {
             let fileProps = [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]]
@@ -61,7 +61,7 @@ enum ImageIOHelpers {
         } else {
             for image in images { CGImageDestinationAddImage(dest, image, nil) }
         }
-        guard CGImageDestinationFinalize(dest) else { throw ToolError.failed("Échec de l'écriture de \(url.lastPathComponent).") }
+        guard CGImageDestinationFinalize(dest) else { throw ToolError.failed(L("Failed to write %@.", url.lastPathComponent)) }
     }
 
     static func context(width: Int, height: Int) -> CGContext? {
@@ -108,7 +108,7 @@ enum ImageIOHelpers {
 
     static func render(_ ci: CIImage) throws -> CGImage {
         guard let cg = ciContext.createCGImage(ci, from: ci.extent.integral, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else {
-            throw ToolError.failed("Échec du rendu de l'image.")
+            throw ToolError.failed(L("Failed to render the image."))
         }
         return cg
     }

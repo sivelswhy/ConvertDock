@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 enum ArchiveTools {
     static var all: [Tool] {
         [
-            Tool(id: "archive.zip", title: "Compresser en ZIP", subtitle: "Tous les éléments dans une archive",
+            Tool(id: "archive.zip", title: "Compress to ZIP", subtitle: "All items in one archive",
                  symbol: "doc.zipper", category: .archive, inputs: [.item],
                  keywords: ["zip", "compresser", "archive", "envoyer"], combinesInputs: true) { inputs, ctx in
                 if inputs.count == 1 {
@@ -24,7 +24,7 @@ enum ArchiveTools {
                 try Shell.run("/usr/bin/ditto", ["-c", "-k", "--sequesterRsrc", "--keepParent", staging.path, out.path])
                 return [out]
             },
-            Tool(id: "archive.unzip", title: "Décompresser", subtitle: "Extraire le contenu de l'archive",
+            Tool(id: "archive.unzip", title: "Decompress", subtitle: "Extract the archive contents",
                  symbol: "arrow.up.bin", category: .archive, inputs: [.zip, .archive].compactMap { $0 },
                  keywords: ["unzip", "décompresser", "extraire", "ouvrir"]) { inputs, ctx in
                 try inputs.map { url in

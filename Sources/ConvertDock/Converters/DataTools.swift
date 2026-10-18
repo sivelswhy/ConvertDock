@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 enum DataTools {
     static var all: [Tool] {
         [
-            Tool(id: "data.json.to.plist", title: "JSON → Property List", subtitle: "Plist XML", symbol: "list.bullet.indent",
+            Tool(id: "data.json.to.plist", title: "JSON → Property List", subtitle: "XML plist", symbol: "list.bullet.indent",
                  category: .data, inputs: [.json], keywords: ["json", "plist", "xml", "apple"]) { inputs, ctx in
                 try inputs.map { url in
                     let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url), options: [.fragmentsAllowed])
@@ -14,7 +14,7 @@ enum DataTools {
                     return out
                 }
             },
-            Tool(id: "data.plist.to.json", title: "Property List → JSON", subtitle: "XML ou binaire", symbol: "curlybraces",
+            Tool(id: "data.plist.to.json", title: "Property List → JSON", subtitle: "XML or binary", symbol: "curlybraces",
                  category: .data, inputs: [.propertyList], keywords: ["plist", "json"]) { inputs, ctx in
                 try inputs.map { url in
                     let object = try PropertyListSerialization.propertyList(from: try Data(contentsOf: url), format: nil)
@@ -24,17 +24,17 @@ enum DataTools {
                     return out
                 }
             },
-            Tool(id: "data.json.pretty", title: "Formater le JSON", subtitle: "Indenté et trié", symbol: "text.alignleft",
+            Tool(id: "data.json.pretty", title: "Format JSON", subtitle: "Indented and sorted", symbol: "text.alignleft",
                  category: .data, inputs: [.json], keywords: ["json", "pretty", "formater", "indenter", "beautify"]) { inputs, ctx in
                 try inputs.map { url in
                     let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url), options: [.fragmentsAllowed])
                     let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes, .fragmentsAllowed])
-                    let out = ctx.output(for: url, ext: "json", suffix: "formaté")
+                    let out = ctx.output(for: url, ext: "json", suffix: L("formatted"))
                     try data.write(to: out)
                     return out
                 }
             },
-            Tool(id: "data.json.minify", title: "Minifier le JSON", subtitle: "Sans espaces", symbol: "arrow.down.right.and.arrow.up.left",
+            Tool(id: "data.json.minify", title: "Minify JSON", subtitle: "No whitespace", symbol: "arrow.down.right.and.arrow.up.left",
                  category: .data, inputs: [.json], keywords: ["json", "minify", "minifier", "compacter"]) { inputs, ctx in
                 try inputs.map { url in
                     let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url), options: [.fragmentsAllowed])
@@ -44,11 +44,11 @@ enum DataTools {
                     return out
                 }
             },
-            Tool(id: "data.csv.to.json", title: "CSV → JSON", subtitle: "Tableau d'objets", symbol: "tablecells",
+            Tool(id: "data.csv.to.json", title: "CSV → JSON", subtitle: "Array of objects", symbol: "tablecells",
                  category: .data, inputs: [.commaSeparatedText, .tabSeparatedText], keywords: ["csv", "json", "tableur", "excel"]) { inputs, ctx in
                 try inputs.map { url in
                     let rows = CSV.parse(try String(contentsOf: url, encoding: .utf8), separator: url.pathExtension.lowercased() == "tsv" ? "\t" : nil)
-                    guard let header = rows.first else { throw ToolError.failed("CSV vide.") }
+                    guard let header = rows.first else { throw ToolError.failed(L("Empty CSV.")) }
                     let objects = rows.dropFirst().map { row in
                         Dictionary(header.enumerated().map { ($0.element, $0.offset < row.count ? row[$0.offset] : "") }, uniquingKeysWith: { a, _ in a })
                     }
@@ -58,12 +58,12 @@ enum DataTools {
                     return out
                 }
             },
-            Tool(id: "data.json.to.csv", title: "JSON → CSV", subtitle: "Pour Excel / Numbers", symbol: "tablecells.badge.ellipsis",
+            Tool(id: "data.json.to.csv", title: "JSON → CSV", subtitle: "For Excel / Numbers", symbol: "tablecells.badge.ellipsis",
                  category: .data, inputs: [.json], keywords: ["json", "csv", "tableur", "excel", "numbers"]) { inputs, ctx in
                 try inputs.map { url in
                     let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url))
                     guard let array = object as? [[String: Any]] else {
-                        throw ToolError.unsupported("Le JSON doit être un tableau d'objets.")
+                        throw ToolError.unsupported(L("The JSON must be an array of objects."))
                     }
                     var keys: [String] = []
                     for item in array { for key in item.keys.sorted() where !keys.contains(key) { keys.append(key) } }
@@ -82,7 +82,7 @@ enum DataTools {
                     return out
                 }
             },
-            Tool(id: "data.base64", title: "Encoder en Base64", subtitle: "N'importe quel fichier → texte", symbol: "number.square",
+            Tool(id: "data.base64", title: "Encode to Base64", subtitle: "Any file → text", symbol: "number.square",
                  category: .data, inputs: [.data], keywords: ["base64", "encoder", "data uri"]) { inputs, ctx in
                 try inputs.map { url in
                     let out = ctx.output(for: url, ext: "txt", suffix: "base64")
@@ -90,7 +90,7 @@ enum DataTools {
                     return out
                 }
             },
-            Tool(id: "data.checksum", title: "Calculer l'empreinte SHA-256", subtitle: "Vérifier l'intégrité", symbol: "checkmark.shield",
+            Tool(id: "data.checksum", title: "Compute SHA-256 checksum", subtitle: "Verify integrity", symbol: "checkmark.shield",
                  category: .data, inputs: [.data], keywords: ["hash", "sha256", "checksum", "empreinte", "md5", "intégrité"]) { inputs, ctx in
                 try inputs.map { url in
                     let result = try Shell.run("/usr/bin/shasum", ["-a", "256", url.path])

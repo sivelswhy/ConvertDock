@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 enum AudioTools {
     static var all: [Tool] {
         [
-            Tool(id: "audio.to.m4a", title: "Convertir en M4A (AAC)", subtitle: "Compressé, haute qualité",
+            Tool(id: "audio.to.m4a", title: "Convert to M4A (AAC)", subtitle: "Compressed, high quality",
                  symbol: "waveform", category: .audio, inputs: [.audio], excludes: [.mpeg4Audio],
                  keywords: ["m4a", "aac", "convertir", "compresser"]) { inputs, ctx in
                 var outputs: [URL] = []
@@ -18,15 +18,15 @@ enum AudioTools {
             pcm(id: "audio.to.wav", name: "WAV", ext: "wav", type: .wav, bigEndian: false, keywords: ["wav", "wave", "non compressé"]),
             pcm(id: "audio.to.aiff", name: "AIFF", ext: "aiff", type: .aiff, bigEndian: true, keywords: ["aiff", "aif", "non compressé"]),
             pcm(id: "audio.to.caf", name: "CAF", ext: "caf", type: UTType("com.apple.coreaudio-format") ?? .audio, bigEndian: false, keywords: ["caf", "core audio"]),
-            encoded(id: "audio.to.flac", title: "Convertir en FLAC", subtitle: "Sans perte, compressé",
+            encoded(id: "audio.to.flac", title: "Convert to FLAC", subtitle: "Lossless, compressed",
                     ext: "flac", type: .flac, format: kAudioFormatFLAC, keywords: ["flac", "lossless", "sans perte"]),
-            encoded(id: "audio.to.alac", title: "Convertir en Apple Lossless", subtitle: "ALAC .m4a, sans perte",
+            encoded(id: "audio.to.alac", title: "Convert to Apple Lossless", subtitle: "ALAC .m4a, lossless",
                     ext: "m4a", suffix: "ALAC", type: nil, format: kAudioFormatAppleLossless, keywords: ["alac", "lossless", "sans perte", "apple"]),
         ]
     }
 
     private static func pcm(id: String, name: String, ext: String, type: UTType, bigEndian: Bool, keywords: [String]) -> Tool {
-        Tool(id: id, title: "Convertir en \(name)", subtitle: "PCM 16 bits, qualité studio",
+        Tool(id: id, title: "Convert to \(name)", subtitle: "16-bit PCM, studio quality",
              symbol: "waveform.path", category: .audio, inputs: [.audio], excludes: [type],
              keywords: ["convertir"] + keywords) { inputs, ctx in
             try inputs.map { url in
@@ -73,7 +73,7 @@ enum AudioTools {
             let output = try AVAudioFile(forWriting: out, settings: settings, commonFormat: .pcmFormatFloat32, interleaved: false)
             let capacity: AVAudioFrameCount = 32_768
             guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: capacity) else {
-                throw ToolError.failed("Mémoire insuffisante.")
+                throw ToolError.failed(L("Not enough memory."))
             }
             let total = max(1, Double(endFrame - startFrame))
             while input.framePosition < endFrame {

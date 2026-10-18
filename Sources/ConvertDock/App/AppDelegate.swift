@@ -2,22 +2,36 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var openedWithFiles = false
+    private var launched = false
+    private var pendingFiles: [URL] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
         NSApp.servicesProvider = self
         NSUpdateDynamicServices()
-        // Lancée en déposant un fichier sur l'icône : seul le panneau rapide s'affiche.
-        if !openedWithFiles { MainWindowController.shared.show() }
+        launched = true
+        if pendingFiles.isEmpty {
+            MainWindowController.shared.show()
+        } else {
+            // Lancée en déposant un fichier sur l'icône : seul le panneau rapide s'affiche,
+            // une fois l'app réellement active (sinon le panneau ne peut pas prendre le focus).
+            let files = pendingFiles
+            pendingFiles = []
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                QuickPanelController.shared.show(files)
+            }
+        }
     }
 
     /// Fichiers déposés sur l'icône (Dock, Bureau, Finder) ou « Ouvrir avec ».
     func application(_ application: NSApplication, open urls: [URL]) {
         let files = urls.filter(\.isFileURL)
         guard !files.isEmpty else { return }
-        openedWithFiles = true
-        QuickPanelController.shared.show(files)
+        if launched {
+            QuickPanelController.shared.show(files)
+        } else {
+            pendingFiles += files
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
