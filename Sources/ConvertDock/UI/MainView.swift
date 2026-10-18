@@ -16,9 +16,11 @@ struct MainView: View {
         return ToolCategory.allCases.filter(present.contains)
     }
 
-    private var results: [Tool] {
-        available.filter { (category == nil || $0.category == category) && $0.matches(query) }
+    private var search: SmartSearch.Result {
+        SmartSearch.search(available.filter { category == nil || $0.category == category }, query: query)
     }
+
+    private var results: [Tool] { search.tools }
 
     var body: some View {
         ZStack {
@@ -27,6 +29,10 @@ struct MainView: View {
             VStack(spacing: 16) {
                 topBar
                 dropArea
+                if let note = search.note {
+                    SearchNote(text: note)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 toolGrid
             }
             .padding(.horizontal, 22)
@@ -50,6 +56,7 @@ struct MainView: View {
             Button("") { searchFocused = true }.keyboardShortcut("f").hidden()
             Button("") { openFiles() }.keyboardShortcut("o").hidden()
         }
+        .sheet(item: $model.preview) { job in ResultSheet(job: job) }
         .onChange(of: model.files) { if let category, !categories.contains(category) { self.category = nil } }
     }
 
@@ -58,7 +65,7 @@ struct MainView: View {
     private var topBar: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                GlassSearchField(text: $query, placeholder: "Rechercher : svg, détourer, mp4, compresser…", height: 40, focus: $searchFocused)
+                GlassSearchField(text: $query, placeholder: "Rechercher : pdf en png, wav vers m4a, détourer, svg…", height: 40, focus: $searchFocused)
                 Button(action: openFiles) {
                     Label("Ouvrir", systemImage: "plus")
                         .frame(height: 26)
@@ -232,9 +239,9 @@ struct MainView: View {
             panel.allowedContentTypes = tool.inputs
             panel.message = tool.title
             guard panel.runModal() == .OK, tool.accepts(all: panel.urls) else { return }
-            AppModel.shared.run(tool, on: panel.urls)
+            AppModel.shared.run(tool, on: panel.urls, presentResult: true)
         } else {
-            AppModel.shared.run(tool, on: model.files)
+            AppModel.shared.run(tool, on: model.files, presentResult: true)
         }
         withAnimation(.smooth) { showActivity = true }
     }

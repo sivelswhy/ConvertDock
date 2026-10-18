@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import UniformTypeIdentifiers
 
 /// Une exécution d'outil sur un ou plusieurs fichiers.
 @MainActor
@@ -19,6 +20,8 @@ final class Job: Identifiable {
     let startedAt = Date()
     var state: State = .running
     var progress: Double = 0
+    /// Incrémenté quand un fichier de sortie est modifié (retouche), pour rafraîchir les aperçus.
+    var revision = 0
     @ObservationIgnored var task: Task<Void, Never>?
 
     init(tool: Tool, inputs: [URL]) {
@@ -38,6 +41,11 @@ final class Job: Identifiable {
         return []
     }
 
+    /// Un seul fichier image en sortie : on peut l'afficher en grand.
+    var showsImagePreview: Bool {
+        outputs.count == 1 && outputs[0].contentType?.conforms(to: .image) == true
+    }
+
     func cancel() {
         task?.cancel()
         state = .cancelled
@@ -52,9 +60,11 @@ final class AppModel {
     /// Fichiers déposés dans la fenêtre principale.
     var files: [URL] = []
     var jobs: [Job] = []
+    /// Résultat affiché en grand dans la fenêtre principale.
+    var preview: Job?
 
     @discardableResult
-    func run(_ tool: Tool, on urls: [URL]) -> Job {
+    func run(_ tool: Tool, on urls: [URL], presentResult: Bool = false) -> Job {
         let job = Job(tool: tool, inputs: urls)
         jobs.insert(job, at: 0)
         if jobs.count > 50 { jobs.removeLast(jobs.count - 50) }
@@ -87,6 +97,7 @@ final class AppModel {
                 }
                 job.state = .succeeded(outputs)
                 finished(job)
+                if presentResult && job.showsImagePreview { preview = job }
             } catch is CancellationError {
                 job.state = .cancelled
             } catch {
@@ -105,6 +116,35 @@ final class AppModel {
         if defaults.bool(forKey: Preferences.revealWhenDone) {
             NSWorkspace.shared.activateFileViewerSelecting(job.outputs)
         }
+    }
+
+    /// Rouvre le détourage dans l'éditeur manuel, pré-rempli avec le résultat, et remplace le fichier produit.
+    func retouch(_ job: Job) async {
+        guard job.tool.isRetouchable, let input = job.inputs.first, let output = job.outputs.first else { return }
+        do {
+            let original = try ImageIOHelpers.load(input, maxPixelSize: VisionTools.editorMaxSize)
+            let current = try ImageIOHelpers.load(output)
+            let sameFraming = abs(Double(current.width) / Double(current.height) - Double(original.width) / Double(original.height)) < 0.01
+            let mask = sameFraming ? alphaMask(of: current, width: original.width, height: original.height) : try? VisionTools.subjectMask(original)
+            guard var edited = await BackgroundEditor.present(input, image: original, initialMask: mask, message: nil) else { return }
+            if job.tool.id == "ai.removebg.crop" { edited = VisionTools.cropToContent(edited) }
+            try ImageIOHelpers.write(edited, to: output, type: .png)
+            job.revision += 1
+        } catch {
+            job.state = .failed(error.localizedDescription)
+        }
+    }
+
+    private func alphaMask(of image: CGImage, width: Int, height: Int) -> [UInt8]? {
+        guard let ctx = ImageIOHelpers.context(width: width, height: height), let data = ctx.data else { return nil }
+        ctx.interpolationQuality = .high
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let px = data.bindMemory(to: UInt8.self, capacity: height * ctx.bytesPerRow)
+        var mask = [UInt8](repeating: 0, count: width * height)
+        for y in 0..<height {
+            for x in 0..<width { mask[y * width + x] = px[y * ctx.bytesPerRow + x * 4 + 3] }
+        }
+        return mask
     }
 
     func clearFinishedJobs() {

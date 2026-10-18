@@ -10,6 +10,12 @@ enum CommandLineInterface {
             }
             return 0
         }
+        if args.first == "--search", args.count > 1 {
+            let result = SmartSearch.search(ToolRegistry.all, query: args[1...].joined(separator: " "))
+            if let note = result.note { print("💡 \(note)") }
+            for tool in result.tools { print("\(tool.id) — \(tool.title)") }
+            return 0
+        }
         var rest = Array(args.drop { $0 != "--run" }.dropFirst())
         guard let id = rest.first, let tool = ToolRegistry.all.first(where: { $0.id == id }) else {
             fputs("Outil inconnu. Utilisez --list pour voir les identifiants.\n", stderr)

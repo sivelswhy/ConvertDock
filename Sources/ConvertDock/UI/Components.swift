@@ -98,6 +98,22 @@ struct CategoryChips: View {
     }
 }
 
+/// Explication de la recherche intelligente (ex. conversion indisponible).
+struct SearchNote: View {
+    let text: String
+
+    var body: some View {
+        Label(text, systemImage: "lightbulb")
+            .font(.system(size: 12))
+            .foregroundStyle(.primary.opacity(0.85))
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .glassEffect(.regular.tint(.yellow.opacity(0.18)), in: .rect(cornerRadius: 14))
+            .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+
 /// Icône Finder d'un fichier.
 struct FileIcon: View {
     let url: URL
@@ -173,6 +189,7 @@ struct JobRow: View {
             ZStack {
                 if case .succeeded(let urls) = job.state, let first = urls.first {
                     ThumbnailView(url: first, size: 34)
+                        .id(job.revision)
                 } else {
                     ToolIcon(tool: job.tool, size: 34)
                 }
@@ -218,6 +235,18 @@ struct JobRow: View {
             }
         case .succeeded(let urls):
             HStack(spacing: 6) {
+                if job.tool.isRetouchable {
+                    Button { Task { await AppModel.shared.retouch(job) } } label: { Image(systemName: "wand.and.stars") }
+                        .buttonStyle(.glass)
+                        .controlSize(.small)
+                        .help("Retoucher le détourage")
+                }
+                if job.showsImagePreview {
+                    Button { AppModel.shared.preview = job } label: { Image(systemName: "eye") }
+                        .buttonStyle(.glass)
+                        .controlSize(.small)
+                        .help("Voir le résultat")
+                }
                 if urls.count == 1 {
                     Button("Ouvrir") { NSWorkspace.shared.open(urls[0]) }
                         .buttonStyle(.glass)

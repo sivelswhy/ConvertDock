@@ -17,9 +17,11 @@ final class QuickPanelModel {
         return ToolCategory.allCases.filter(present.contains)
     }
 
-    var results: [Tool] {
-        compatible.filter { (category == nil || $0.category == category) && $0.matches(query) }
+    var search: SmartSearch.Result {
+        SmartSearch.search(compatible.filter { category == nil || $0.category == category }, query: query)
     }
+
+    var results: [Tool] { search.tools }
 
     var sections: [(ToolCategory, [Tool])] {
         let results = results
@@ -85,6 +87,9 @@ struct QuickPanelView: View {
             GlassSearchField(text: $model.query, height: 42, focus: $searchFocused)
             if model.categories.count > 1 {
                 CategoryChips(categories: model.categories, selection: $model.category, compact: true)
+            }
+            if let note = model.search.note {
+                SearchNote(text: note)
             }
             list
         }
@@ -218,6 +223,46 @@ private struct JobResultView: View {
     let model: QuickPanelModel
 
     var body: some View {
+        if case .succeeded = job.state, job.showsImagePreview {
+            imageResult
+        } else {
+            standardResult
+        }
+    }
+
+    /// Résultat image : grand aperçu avant / après, et « Retoucher » pour les détourages.
+    private var imageResult: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.green)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(job.tool.title).font(.system(size: 15, weight: .semibold))
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .id(job.revision)
+                }
+                Spacer()
+                Button { model.onClose() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: .circle)
+            }
+            ResultPreview(job: job)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ResultActions(job: job, onBack: { model.job = nil })
+        }
+        .padding(20)
+    }
+
+    private var standardResult: some View {
         VStack(spacing: 20) {
             Spacer()
             status

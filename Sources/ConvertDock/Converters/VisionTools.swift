@@ -1,3 +1,4 @@
+import AppKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import UniformTypeIdentifiers
@@ -10,18 +11,36 @@ enum VisionTools {
             Tool(id: "ai.removebg", title: "Supprimer l'arrière-plan", subtitle: "Détourage automatique du sujet → PNG",
                  symbol: "person.crop.circle.badge.minus", category: .intelligence, inputs: [.image],
                  keywords: ["background", "remover", "détourer", "fond", "transparent", "arrière-plan", "remove bg"]) { inputs, ctx in
-                try inputs.map { url in
+                try await inputs.asyncMap { url in
+                    let image = try await removeBackgroundOrAsk(url, crop: false)
                     let out = ctx.output(for: url, ext: "png", suffix: "détouré")
-                    try ImageIOHelpers.write(try removeBackground(url, crop: false), to: out, type: .png)
+                    try ImageIOHelpers.write(image, to: out, type: .png)
                     return out
                 }
             },
             Tool(id: "ai.removebg.crop", title: "Détourer et recadrer", subtitle: "Sujet isolé, cadré au plus près",
                  symbol: "crop", category: .intelligence, inputs: [.image],
                  keywords: ["background", "remover", "sticker", "autocollant", "recadrer", "fond"]) { inputs, ctx in
-                try inputs.map { url in
+                try await inputs.asyncMap { url in
+                    let image = try await removeBackgroundOrAsk(url, crop: true)
                     let out = ctx.output(for: url, ext: "png", suffix: "sticker")
-                    try ImageIOHelpers.write(try removeBackground(url, crop: true), to: out, type: .png)
+                    try ImageIOHelpers.write(image, to: out, type: .png)
+                    return out
+                }
+            },
+            Tool(id: "ai.removebg.manual", title: "Détourage manuel", subtitle: "Baguette magique et pinceau, pour retoucher",
+                 symbol: "wand.and.stars", category: .intelligence, inputs: [.image],
+                 keywords: ["background", "remover", "fond", "détourer", "détourage", "baguette", "magique", "pinceau", "gomme", "manuel", "retoucher", "sélectionner"]) { inputs, ctx in
+                try await inputs.asyncMap { url in
+                    guard await isInteractive else { throw ToolError.unsupported("Le détourage manuel nécessite l'interface graphique.") }
+                    let image = try ImageIOHelpers.load(url, maxPixelSize: editorMaxSize)
+                    let mask = try? subjectMask(image)
+                    guard let result = await BackgroundEditor.present(
+                        url, image: image, initialMask: mask,
+                        message: mask == nil ? "Cliquez sur l'arrière-plan avec la baguette magique pour le supprimer." : nil
+                    ) else { throw CancellationError() }
+                    let out = ctx.output(for: url, ext: "png", suffix: "détouré")
+                    try ImageIOHelpers.write(result, to: out, type: .png)
                     return out
                 }
             },
@@ -84,13 +103,69 @@ enum VisionTools {
         ]
     }
 
+    static let editorMaxSize = 2400
+
+    @MainActor static var isInteractive: Bool { NSApp.activationPolicy() != .prohibited }
+
+    /// Détourage automatique ; si aucun sujet n'est trouvé, ouvre l'éditeur manuel (baguette magique / pinceau).
+    static func removeBackgroundOrAsk(_ url: URL, crop: Bool) async throws -> CGImage {
+        do {
+            return try removeBackground(url, crop: crop)
+        } catch ToolError.noSubject {
+            guard await isInteractive else { throw ToolError.noSubject(url) }
+            let image = try ImageIOHelpers.load(url, maxPixelSize: editorMaxSize)
+            guard let result = await BackgroundEditor.present(
+                url, image: image, initialMask: nil,
+                message: "Aucun sujet détecté automatiquement. Cliquez sur l'arrière-plan avec la baguette magique pour le supprimer."
+            ) else { throw CancellationError() }
+            return crop ? cropToContent(result) : result
+        }
+    }
+
+    /// Masque du sujet (0–255 par pixel) aux dimensions de l'image, ou `nil` si rien n'est détecté.
+    static func subjectMask(_ image: CGImage) throws -> [UInt8]? {
+        let request = VNGenerateForegroundInstanceMaskRequest()
+        let handler = VNImageRequestHandler(cgImage: image)
+        try handler.perform([request])
+        guard let result = request.results?.first, !result.allInstances.isEmpty else { return nil }
+        let buffer = try result.generateScaledMaskForImage(forInstances: result.allInstances, from: handler)
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
+        guard w == image.width, h == image.height, let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
+        let rowBytes = CVPixelBufferGetBytesPerRow(buffer)
+        var mask = [UInt8](repeating: 0, count: w * h)
+        for y in 0..<h {
+            let row = (base + y * rowBytes).assumingMemoryBound(to: Float32.self)
+            for x in 0..<w { mask[y * w + x] = UInt8(min(max(row[x], 0), 1) * 255) }
+        }
+        return mask
+    }
+
+    /// Recadre une image sur ses pixels non transparents.
+    static func cropToContent(_ image: CGImage) -> CGImage {
+        guard let ctx = ImageIOHelpers.context(width: image.width, height: image.height), let data = ctx.data else { return image }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let px = data.bindMemory(to: UInt8.self, capacity: image.width * image.height * 4)
+        let row = ctx.bytesPerRow
+        var minX = image.width, minY = image.height, maxX = -1, maxY = -1
+        for y in 0..<image.height {
+            for x in 0..<image.width where px[y * row + x * 4 + 3] > 8 {
+                minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return image }
+        // Les lignes du contexte bitmap partent du haut, comme CGImage.cropping.
+        return image.cropping(to: CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)) ?? image
+    }
+
     static func removeBackground(_ url: URL, crop: Bool) throws -> CGImage {
         let image = try ImageIOHelpers.load(url)
         let request = VNGenerateForegroundInstanceMaskRequest()
         let handler = VNImageRequestHandler(cgImage: image)
         try handler.perform([request])
         guard let result = request.results?.first, !result.allInstances.isEmpty else {
-            throw ToolError.failed("Aucun sujet détecté dans « \(url.lastPathComponent) ».")
+            throw ToolError.noSubject(url)
         }
         let buffer = try result.generateMaskedImage(ofInstances: result.allInstances, from: handler, croppedToInstancesExtent: crop)
         return try ImageIOHelpers.render(CIImage(cvPixelBuffer: buffer))

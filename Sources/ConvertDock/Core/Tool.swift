@@ -118,6 +118,9 @@ struct Tool: Identifiable, Hashable, Sendable {
     static func == (lhs: Tool, rhs: Tool) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
+    /// Détourages : le résultat peut être retouché à la main.
+    var isRetouchable: Bool { id.hasPrefix("ai.removebg") }
+
     func accepts(_ url: URL) -> Bool {
         guard let type = url.contentType else { return false }
         if excludes.contains(where: { exactExcludes ? type == $0 : type.conforms(to: $0) }) { return false }
@@ -160,12 +163,14 @@ enum ToolError: LocalizedError {
     case unreadable(URL)
     case unsupported(String)
     case failed(String)
+    case noSubject(URL)
 
     var errorDescription: String? {
         switch self {
         case .unreadable(let url): "Impossible de lire « \(url.lastPathComponent) »."
         case .unsupported(let message): message
         case .failed(let message): message
+        case .noSubject(let url): "Aucun sujet détecté dans « \(url.lastPathComponent) »."
         }
     }
 }
