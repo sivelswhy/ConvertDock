@@ -1,4 +1,4 @@
-.PHONY: build app install run logos clean
+.PHONY: build app install run clean
 
 build:
 	swift build
@@ -11,9 +11,6 @@ install:
 
 run: app
 	open build/ConvertDock.app
-
-logos:
-	swift Scripts/generate-logos.swift Logos
 
 clean:
 	rm -rf .build build
