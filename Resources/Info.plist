@@ -29,6 +29,8 @@
 	<string>26.0</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>ConvertDock transcribes audio and video on your Mac to create text and subtitles.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

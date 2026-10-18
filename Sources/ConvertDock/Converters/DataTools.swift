@@ -82,6 +82,65 @@ enum DataTools {
                     return out
                 }
             },
+            Tool(id: "data.json.to.yaml", title: "JSON → YAML", subtitle: "Readable configuration", symbol: "list.bullet.indent",
+                 category: .data, inputs: [.json], keywords: ["json", "yaml", "yml", "config", "docker", "kubernetes"]) { inputs, ctx in
+                try inputs.map { url in
+                    let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url), options: [.fragmentsAllowed])
+                    let out = ctx.output(for: url, ext: "yaml")
+                    try YAML.emit(object).write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "data.yaml.to.json", title: "YAML → JSON", subtitle: "For APIs and scripts", symbol: "curlybraces",
+                 category: .data, inputs: [.yaml], inputExtensions: ["yaml", "yml"],
+                 keywords: ["yaml", "yml", "json", "config"]) { inputs, ctx in
+                try inputs.map { url in
+                    let object = try YAML.parse(try String(contentsOf: url, encoding: .utf8))
+                    let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .withoutEscapingSlashes, .fragmentsAllowed])
+                    let out = ctx.output(for: url, ext: "json")
+                    try data.write(to: out)
+                    return out
+                }
+            },
+            Tool(id: "data.csv.to.html", title: "CSV → HTML table", subtitle: "Styled table, ready to share", symbol: "tablecells",
+                 category: .data, inputs: [.commaSeparatedText, .tabSeparatedText], keywords: ["csv", "html", "tableau", "table", "web"]) { inputs, ctx in
+                try inputs.map { url in
+                    let rows = CSV.parse(try String(contentsOf: url, encoding: .utf8), separator: url.pathExtension.lowercased() == "tsv" ? "\t" : nil)
+                    guard let header = rows.first else { throw ToolError.failed(L("Empty CSV.")) }
+                    let cell = { (tag: String, value: String) in "<\(tag)>\(Markdown.escape(value))</\(tag)>" }
+                    let body = rows.dropFirst().map { "<tr>" + $0.map { cell("td", $0) }.joined() + "</tr>" }.joined(separator: "\n")
+                    let html = """
+                    <!DOCTYPE html><html><head><meta charset="utf-8"><title>\(Markdown.escape(url.baseName))</title>
+                    <style>body{font-family:-apple-system,sans-serif;margin:2em}table{border-collapse:collapse}th,td{border:1px solid #d1d1d6;padding:.4em .7em;text-align:left}th{background:#f2f2f7}tr:nth-child(even) td{background:#fafafa}</style>
+                    </head><body><table>
+                    <thead><tr>\(header.map { cell("th", $0) }.joined())</tr></thead>
+                    <tbody>
+                    \(body)
+                    </tbody></table></body></html>
+                    """
+                    let out = ctx.output(for: url, ext: "html")
+                    try html.write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "data.csv.to.md", title: "CSV → Markdown table", subtitle: "For READMEs and notes", symbol: "tablecells",
+                 category: .data, inputs: [.commaSeparatedText, .tabSeparatedText], keywords: ["csv", "markdown", "md", "tableau", "table", "github"]) { inputs, ctx in
+                try inputs.map { url in
+                    let rows = CSV.parse(try String(contentsOf: url, encoding: .utf8), separator: url.pathExtension.lowercased() == "tsv" ? "\t" : nil)
+                    guard let header = rows.first else { throw ToolError.failed(L("Empty CSV.")) }
+                    let clean = { (v: String) in v.replacingOccurrences(of: "|", with: "\\|").replacingOccurrences(of: "\n", with: " ") }
+                    var lines = ["| " + header.map(clean).joined(separator: " | ") + " |", "|" + header.map { _ in " --- " }.joined(separator: "|") + "|"]
+                    for row in rows.dropFirst() {
+                        let padded = (0..<header.count).map { $0 < row.count ? clean(row[$0]) : "" }
+                        lines.append("| " + padded.joined(separator: " | ") + " |")
+                    }
+                    let out = ctx.output(for: url, ext: "md")
+                    try (lines.joined(separator: "\n") + "\n").write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            plistFormat(id: "data.plist.binary", title: "Convert plist to binary", subtitle: "Compact, read faster", format: .binary, suffix: L("binary")),
+            plistFormat(id: "data.plist.xml", title: "Convert plist to XML", subtitle: "Readable and editable", format: .xml, suffix: "XML"),
             Tool(id: "data.base64", title: "Encode to Base64", subtitle: "Any file → text", symbol: "number.square",
                  category: .data, inputs: [.data], keywords: ["base64", "encoder", "data uri"]) { inputs, ctx in
                 try inputs.map { url in
@@ -100,6 +159,19 @@ enum DataTools {
                 }
             },
         ]
+    }
+
+    private static func plistFormat(id: String, title: String, subtitle: String, format: PropertyListSerialization.PropertyListFormat, suffix: String) -> Tool {
+        Tool(id: id, title: title, subtitle: subtitle, symbol: "list.bullet.rectangle", category: .data, inputs: [.propertyList],
+             keywords: ["plist", "binaire", "binary", "xml", "apple", "préférences"]) { inputs, ctx in
+            try inputs.map { url in
+                let object = try PropertyListSerialization.propertyList(from: try Data(contentsOf: url), format: nil)
+                let data = try PropertyListSerialization.data(fromPropertyList: object, format: format, options: 0)
+                let out = ctx.output(for: url, ext: "plist", suffix: suffix)
+                try data.write(to: out)
+                return out
+            }
+        }
     }
 
     private static func stripNulls(_ value: Any) -> Any {

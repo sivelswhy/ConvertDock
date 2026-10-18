@@ -10,6 +10,7 @@ enum ToolCategory: String, CaseIterable, Identifiable, Sendable {
     case audio = "Audio"
     case document = "Documents"
     case pdf = "PDF"
+    case model = "3D"
     case data = "Data"
     case archive = "Archives"
 
@@ -25,6 +26,7 @@ enum ToolCategory: String, CaseIterable, Identifiable, Sendable {
         case .audio: "waveform"
         case .document: "doc.text"
         case .pdf: "doc.richtext"
+        case .model: "cube"
         case .data: "curlybraces"
         case .archive: "archivebox"
         }
@@ -38,6 +40,7 @@ enum ToolCategory: String, CaseIterable, Identifiable, Sendable {
         case .audio: .orange
         case .document: .teal
         case .pdf: .red
+        case .model: .indigo
         case .data: .green
         case .archive: .brown
         }
@@ -75,6 +78,8 @@ struct Tool: Identifiable, Hashable, Sendable {
     let category: ToolCategory
     /// Types acceptés en entrée (un fichier conforme à l'un d'eux est accepté).
     let inputs: [UTType]
+    /// Extensions acceptées en plus des types (formats sans type système déclaré : srt, yaml, stl…).
+    let inputExtensions: [String]
     /// Types exclus explicitement (ex. ne pas proposer « Convertir en PNG » pour un PNG).
     let excludes: [UTType]
     /// Exclusion stricte (type identique) plutôt que par conformité — ex. TXT exclut .txt mais pas .md.
@@ -94,6 +99,7 @@ struct Tool: Identifiable, Hashable, Sendable {
         symbol: String,
         category: ToolCategory,
         inputs: [UTType],
+        inputExtensions: [String] = [],
         excludes: [UTType] = [],
         exactExcludes: Bool = false,
         keywords: [String] = [],
@@ -108,6 +114,7 @@ struct Tool: Identifiable, Hashable, Sendable {
         self.symbol = symbol
         self.category = category
         self.inputs = inputs
+        self.inputExtensions = inputExtensions
         self.excludes = excludes
         self.exactExcludes = exactExcludes
         self.keywords = keywords
@@ -124,6 +131,7 @@ struct Tool: Identifiable, Hashable, Sendable {
     var isRetouchable: Bool { id.hasPrefix("ai.removebg") }
 
     func accepts(_ url: URL) -> Bool {
+        if inputExtensions.contains(url.pathExtension.lowercased()) { return true }
         guard let type = url.contentType else { return false }
         if excludes.contains(where: { exactExcludes ? type == $0 : type.conforms(to: $0) }) { return false }
         return inputs.contains(where: { type.conforms(to: $0) })

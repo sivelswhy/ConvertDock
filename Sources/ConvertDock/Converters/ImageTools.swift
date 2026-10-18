@@ -34,6 +34,11 @@ enum ImageTools {
         Target(type: .bmp, ext: "bmp", name: "BMP", keywords: ["bitmap", "windows"]),
         Target(type: .ico, ext: "ico", name: "ICO", maxSide: 256, keywords: ["favicon", "icône", "windows"]),
         Target(type: UTType("com.adobe.photoshop-image") ?? .image, ext: "psd", name: "PSD", keywords: ["photoshop"]),
+        Target(type: UTType("public.jpeg-2000") ?? .image, ext: "jp2", name: "JPEG 2000", quality: 0.85, keywords: ["jpeg2000", "j2k", "cinéma"]),
+        Target(type: UTType("com.ilm.openexr-image") ?? .image, ext: "exr", name: "OpenEXR", keywords: ["hdr", "vfx", "compositing", "blender"]),
+        Target(type: UTType("com.truevision.tga-image") ?? .image, ext: "tga", name: "TGA", keywords: ["targa", "jeux", "game", "texture"]),
+        Target(type: UTType("org.khronos.ktx") ?? .image, ext: "ktx", name: "KTX", keywords: ["texture", "gpu", "opengl", "jeux", "game"]),
+        Target(type: UTType("com.microsoft.dds") ?? .image, ext: "dds", name: "DDS", keywords: ["texture", "directx", "jeux", "game"]),
     ]
 
     private static var conversions: [Tool] {
@@ -77,6 +82,45 @@ enum ImageTools {
                 let out = ctx.output(for: url, ext: "icns")
                 try ImageIOHelpers.writeMulti(frames, to: out, type: .icns)
                 return out
+            }
+        })
+
+        tools.append(Tool(
+            id: "image.favicon",
+            title: "Create a favicon pack",
+            subtitle: "ICO + PNG 16 to 512 px + HTML code",
+            symbol: "globe",
+            category: .image,
+            inputs: [.image, svg],
+            keywords: ["favicon", "site", "web", "icône", "apple-touch-icon", "manifest", "ico", "pwa"]
+        ) { inputs, ctx in
+            try inputs.map { url in try makeFavicons(from: url) }
+        })
+
+        tools.append(Tool(
+            id: "image.svg.scales",
+            title: "SVG → PNG @1x @2x @3x",
+            subtitle: "Sharp exports for apps and Retina screens",
+            symbol: "square.3.layers.3d",
+            category: .image,
+            inputs: [svg],
+            keywords: ["svg", "png", "retina", "@2x", "@3x", "export", "ios", "app"]
+        ) { inputs, ctx in
+            try inputs.map { url in
+                guard let image = NSImage(contentsOf: url), image.size.width > 0 else { throw ToolError.unreadable(url) }
+                let folder = try PDFTools.makeFolder(for: url, name: "PNG")
+                for scale in [1, 2, 3] {
+                    let w = Int(image.size.width) * scale, h = Int(image.size.height) * scale
+                    guard let ctx = ImageIOHelpers.context(width: w, height: h) else { continue }
+                    NSGraphicsContext.saveGraphicsState()
+                    NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
+                    image.draw(in: NSRect(x: 0, y: 0, width: w, height: h))
+                    NSGraphicsContext.restoreGraphicsState()
+                    guard let cg = ctx.makeImage() else { continue }
+                    let name = scale == 1 ? url.baseName : "\(url.baseName)@\(scale)x"
+                    try ImageIOHelpers.write(cg, to: folder.appendingPathComponent(name).appendingPathExtension("png"), type: .png)
+                }
+                return folder
             }
         })
 
@@ -204,6 +248,45 @@ enum ImageTools {
                 return [out]
             },
         ]
+    }
+
+    /// Pack favicon complet pour un site web, avec le code HTML à coller.
+    static func makeFavicons(from url: URL) throws -> URL {
+        let image = try ImageIOHelpers.load(url)
+        let folder = try PDFTools.makeFolder(for: url, name: "favicon")
+        let pngs: [(String, Int)] = [
+            ("favicon-16x16.png", 16), ("favicon-32x32.png", 32), ("favicon-48x48.png", 48),
+            ("apple-touch-icon.png", 180), ("android-chrome-192x192.png", 192), ("android-chrome-512x512.png", 512),
+        ]
+        for (name, size) in pngs {
+            try ImageIOHelpers.write(ImageIOHelpers.resize(image, maxSide: size, square: true),
+                                     to: folder.appendingPathComponent(name), type: .png)
+        }
+        try ImageIOHelpers.writeMulti([16, 32, 48].map { ImageIOHelpers.resize(image, maxSide: $0, square: true) },
+                                      to: folder.appendingPathComponent("favicon.ico"), type: .ico)
+        let manifest = """
+        {
+          "name": "",
+          "short_name": "",
+          "icons": [
+            { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+            { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+          ],
+          "display": "standalone"
+        }
+
+        """
+        try manifest.write(to: folder.appendingPathComponent("site.webmanifest"), atomically: true, encoding: .utf8)
+        let html = """
+        <link rel="icon" href="/favicon.ico" sizes="48x48">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+        <link rel="manifest" href="/site.webmanifest">
+
+        """
+        try html.write(to: folder.appendingPathComponent("favicon.html"), atomically: true, encoding: .utf8)
+        return folder
     }
 
     static func makePDF(from urls: [URL], to out: URL) throws {

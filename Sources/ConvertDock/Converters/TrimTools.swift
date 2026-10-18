@@ -11,6 +11,24 @@ enum TrimTools {
                  configure: { url in await TrimEditor.present(url) }) { inputs, ctx in
                 try await inputs.asyncMap { url in try await trimVideo(url, ctx: ctx) }
             },
+            Tool(id: "audio.ringtone", title: "Make an iPhone ringtone", subtitle: "Pick up to 40 s → .m4r",
+                 symbol: "bell.badge", category: .audio, inputs: [.audio, .movie],
+                 keywords: ["sonnerie", "ringtone", "m4r", "iphone", "alerte", "garageband"],
+                 configure: { url in await TrimEditor.present(url) }) { inputs, ctx in
+                try await inputs.asyncMap { url in
+                    var parameters = ctx.parameters
+                    let start = parameters.trimStart ?? 0
+                    parameters.trimEnd = min(parameters.trimEnd ?? start + 40, start + 40)
+                    let range = timeRange(parameters) ?? CMTimeRange(start: .zero, duration: CMTime(seconds: 40, preferredTimescale: 600))
+                    let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+                    defer { try? FileManager.default.removeItem(at: tmp) }
+                    try await VideoTools.exportAsset(AVURLAsset(url: url), preset: AVAssetExportPresetAppleM4A, to: tmp, type: .m4a,
+                                                     timeRange: range, progress: ctx.progress)
+                    let out = ctx.output(for: url, ext: "m4r")
+                    try FileManager.default.moveItem(at: tmp, to: out)
+                    return out
+                }
+            },
             Tool(id: "audio.trim", title: "Trim audio", subtitle: "Pick the start and end",
                  symbol: "waveform.badge.minus", category: .audio, inputs: [.audio],
                  keywords: ["trim", "couper", "découper", "rogner", "raccourcir", "extrait", "sonnerie", "cut"],

@@ -112,23 +112,32 @@ enum SmartSearch {
         "videos": "video", "film": "video", "movie": "video", "son": "audio", "musique": "audio", "music": "audio",
         "sound": "audio", "pictures": "image", "videos ": "video", "icone": "icns", "icon": "icns", "favicon": "ico", "vecteur": "svg", "vector": "svg",
         "vectoriel": "svg", "archive": "zip", "plist": "plist", "propertylist": "plist", "gif anime": "gif",
-        "documents": "document", "doc": "doc", "odf": "odt", "opendocument": "odt", "libreoffice": "odt",
+        "documents": "document", "doc": "doc",
+        "tar.gz": "targz", "tgz": "targz", "tar.xz": "tarxz", "txz": "tarxz", "sous-titres": "srt", "soustitres": "srt",
+        "subtitles": "srt", "subtitle": "srt", "webvtt": "vtt", "yml": "yaml", "sonnerie": "m4r", "ringtone": "m4r",
+        "prores": "prores", "j2k": "jp2", "jpeg2000": "jp2", "targa": "tga", "texte parle": "audio", "voix": "audio",
+        "speech": "audio", "parole": "audio", "transcription": "txt", "3d": "usdz", "ar": "usdz", "imagedisque": "dmg", "odf": "odt", "opendocument": "odt", "libreoffice": "odt",
     ]
 
     private static let families: [String: UTType] = [
         "image": .image, "video": .movie, "audio": .audio, "document": .text,
     ]
 
+    /// Formats de fichier sans type système, reconnus par leur extension.
+    private static let extensionOnly: Set<String> = ["srt", "vtt", "obj", "stl", "ply", "usda", "usdc", "abc", "yaml", "aar"]
+
     private static let knownFormats: Set<String> = [
         "png", "jpg", "heic", "avif", "tiff", "gif", "bmp", "ico", "icns", "psd", "svg", "webp", "raw", "dng", "cr2", "nef",
         "pdf", "mp4", "mov", "m4v", "hevc", "mkv", "avi", "webm", "wmv", "mp3", "wav", "aiff", "caf", "flac", "m4a", "ogg",
         "opus", "wma", "docx", "doc", "odt", "rtf", "rtfd", "html", "txt", "md", "pages", "epub", "json", "csv", "tsv", "xml",
-        "yaml", "yml", "zip", "tar", "gz", "tgz", "rar", "7z", "base64", "sha256",
+        "yaml", "zip", "tar", "gz", "rar", "7z", "base64", "sha256",
+        "jp2", "exr", "tga", "ktx", "dds", "srt", "vtt", "obj", "stl", "ply", "usdz", "usd", "usda", "usdc", "abc",
+        "dmg", "m4r", "aar", "targz", "tarxz", "webarchive", "rtfd", "favicon", "prores", "xz",
         "image", "video", "audio", "document",
     ]
 
     private static let alternatives: [String: String] = [
-        "mp3": "m4a", "ogg": "m4a", "opus": "m4a", "wma": "m4a", "webp": "avif",
+        "mp3": "m4a", "ogg": "opus", "wma": "m4a", "webp": "avif",
         "mkv": "mp4", "avi": "mp4", "webm": "mp4", "wmv": "mp4", "rar": "zip", "7z": "zip", "pages": "docx",
     ]
 
@@ -138,7 +147,6 @@ enum SmartSearch {
             "mp3": L("macOS cannot encode MP3 natively"),
             "webp": L("macOS cannot write WebP"),
             "ogg": L("format not supported by macOS"),
-            "opus": L("format not supported by macOS"),
             "mkv": L("container not supported by macOS"),
             "avi": L("container not supported by macOS"),
             "webm": L("container not supported by macOS"),
@@ -154,6 +162,8 @@ enum SmartSearch {
     // MARK: Correspondance avec les outils
 
     private static func matches(_ tool: Tool, _ intent: Intent) -> Bool {
+        // Les outils génériques (Base64, empreinte) ne répondent qu'à une demande explicite.
+        if ["data.base64", "data.checksum"].contains(tool.id), !["base64", "sha256"].contains(intent.target ?? "") { return false }
         if let source = intent.source, !accepts(tool, format: source) { return false }
         if let target = intent.target, !produces(tool, format: target) { return false }
         // Évite « png → png » quand la source et la cible sont identiques et que l'outil n'est qu'une conversion.
@@ -161,7 +171,9 @@ enum SmartSearch {
     }
 
     static func accepts(_ tool: Tool, format: String) -> Bool {
-        let type: UTType? = families[format] ?? (format == "hevc" ? .mpeg4Movie : UTType(filenameExtension: format))
+        if tool.inputExtensions.contains(format) { return true }
+        if extensionOnly.contains(format) { return false }
+        let type: UTType? = families[format] ?? (format == "hevc" || format == "prores" ? .movie : UTType(filenameExtension: format))
         guard let type else { return false }
         if tool.excludes.contains(where: { tool.exactExcludes ? type == $0 : type.conforms(to: $0) }) { return false }
         return tool.inputs.contains { type.conforms(to: $0) }
@@ -200,6 +212,14 @@ enum SmartSearch {
         "data.json.to.plist": ["plist"], "data.plist.to.json": ["json"], "data.csv.to.json": ["json"],
         "data.json.to.csv": ["csv"], "data.json.pretty": ["json"], "data.json.minify": ["json"],
         "data.base64": ["base64", "txt"], "data.checksum": ["sha256"],
-        "archive.zip": ["zip"], "archive.unzip": [],
+        "data.plist.binary": ["plist"], "data.plist.xml": ["plist", "xml"],
+        "archive.zip": ["zip"], "archive.unzip": [], "archive.targz": ["targz", "tar"], "archive.tarxz": ["tarxz", "xz"],
+        "archive.aar": ["aar"], "archive.dmg": ["dmg"],
+        "ai.transcribe": ["txt"], "ai.subtitles": ["srt"], "ai.speak": ["m4a", "audio"],
+        "image.favicon": ["favicon", "ico", "png"], "image.svg.scales": ["png"],
+        "video.to.prores422": ["prores", "mov"], "video.to.prores4444": ["prores", "mov"],
+        "video.mute": ["mov"], "video.speed.2x": ["mp4"], "video.speed.half": ["mp4"], "video.rotate": ["mov"], "video.frames": ["jpg"],
+        "audio.ringtone": ["m4r"], "audio.to.opus": ["opus", "caf"], "audio.to.aac256": ["m4a"], "audio.to.aac96": ["m4a"],
+        "3d.to.usdc": ["usd", "usdc"],
     ]
 }

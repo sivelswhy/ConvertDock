@@ -21,12 +21,14 @@ enum DocumentTools {
         Target(name: "RTF", ext: "rtf", type: [.rtf], keywords: ["rtf", "texte enrichi", "textedit"]),
         Target(name: "HTML", ext: "html", type: [.html], keywords: ["html", "web", "page"]),
         Target(name: "Plain text (TXT)", ext: "txt", type: [.plainText], keywords: ["txt", "texte", "brut"]),
+        Target(name: "Web Archive", ext: "webarchive", type: [.webArchive], keywords: ["webarchive", "safari", "archive web"]),
+        Target(name: "RTFD", ext: "rtfd", type: [.rtfd], keywords: ["rtfd", "textedit", "images"]),
     ]
 
     static var all: [Tool] {
         var tools = targets.map { target in
             Tool(id: "doc.to.\(target.ext)", title: "Convert to \(target.name)", subtitle: "Document → .\(target.ext)",
-                 symbol: target.ext == "pdf" ? "doc.richtext" : "doc.text", category: .document,
+                 symbol: target.ext == "pdf" ? "doc.richtext" : target.ext == "webarchive" ? "safari" : "doc.text", category: .document,
                  inputs: readable, excludes: target.type, exactExcludes: target.ext == "txt",
                  keywords: ["convertir", "document"] + target.keywords) { inputs, ctx in
                 var outputs: [URL] = []
@@ -114,6 +116,13 @@ enum DocumentTools {
         case "odt": type = .openDocument
         case "rtf": type = .rtf
         case "html": type = .html
+        case "webarchive": type = .webArchive
+        case "rtfd":
+            guard let wrapper = text.rtfdFileWrapper(from: range, documentAttributes: [:]) else {
+                throw ToolError.failed(L("Failed to write %@.", out.lastPathComponent))
+            }
+            try wrapper.write(to: out, options: .atomic, originalContentsURL: nil)
+            return
         default:
             try text.string.write(to: out, atomically: true, encoding: .utf8)
             return
