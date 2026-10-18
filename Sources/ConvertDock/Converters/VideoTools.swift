@@ -28,6 +28,18 @@ enum VideoTools {
             export(id: "video.audio", title: "Extract audio (M4A)", subtitle: "Soundtrack only",
                    preset: AVAssetExportPresetAppleM4A, type: .m4a, ext: "m4a", excludes: [],
                    keywords: ["audio", "son", "extraire", "musique", "m4a", "aac"]),
+            Tool(id: "video.to.mp3", title: "Extract audio (MP3)", subtitle: "Soundtrack as MP3",
+                 symbol: "music.note", category: .video, inputs: [.movie],
+                 keywords: ["audio", "son", "extraire", "musique", "mp3"]) { inputs, ctx in
+                try await inputs.asyncMap { url in
+                    let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+                    defer { try? FileManager.default.removeItem(at: tmp) }
+                    try await exportAsset(AVURLAsset(url: url), preset: AVAssetExportPresetAppleM4A, to: tmp, type: .m4a) { ctx.progress($0 * 0.5) }
+                    let out = ctx.output(for: url, ext: "mp3")
+                    try MP3Encoder.encode(tmp, to: out, mode: .vbr(quality: 2)) { ctx.progress(0.5 + $0 * 0.5) }
+                    return out
+                }
+            },
             Tool(id: "video.to.gif", title: "Convert to animated GIF", subtitle: "10 fps, 480 px, 20 s max",
                  symbol: "play.square.stack", category: .video, inputs: [.movie],
                  keywords: ["gif", "animation", "animé", "meme"]) { inputs, ctx in

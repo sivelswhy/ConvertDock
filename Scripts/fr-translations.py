@@ -174,6 +174,17 @@ FR = {
 'Very efficient codec, .caf container': 'Codec très efficace, conteneur .caf',
 'WebVTT → SRT': 'WebVTT → SRT',
 'YAML → JSON': 'YAML → JSON',
+'Convert to MP3 320 kbps': 'Convertir en MP3 320 kbit/s',
+'Convert to WebP (lossless)': 'Convertir en WebP (sans perte)',
+'Could not start the MP3 encoder.': "Impossible de démarrer l'encodeur MP3.",
+'Extract audio (MP3)': "Extraire l'audio (MP3)",
+'lossless': 'sans perte',
+'Maximum MP3 quality': 'Qualité MP3 maximale',
+'MP3 encoding failed.': "Échec de l'encodage MP3.",
+'Pixel-perfect, smaller than PNG': 'Fidèle au pixel près, plus léger que le PNG',
+'Plays everywhere, high-quality VBR': 'Lisible partout, VBR haute qualité',
+'Soundtrack as MP3': 'Piste sonore en MP3',
+'WebP encoding failed.': "Échec de l'encodage WebP.",
 "Words: %d": "Mots : %d", "Writing %@ is not supported.": "Le format %@ n'est pas pris en charge en écriture.", "XML or binary": "XML ou binaire", "XML plist": "Plist XML",
 }
 

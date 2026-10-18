@@ -99,6 +99,8 @@
 "Convert to M4A 96 kbps" = "Convertir en M4A 96 kbit/s";
 "Convert to M4V" = "Convertir en M4V";
 "Convert to MOV" = "Convertir en MOV";
+"Convert to MP3" = "Convertir en MP3";
+"Convert to MP3 320 kbps" = "Convertir en MP3 320 kbit/s";
 "Convert to MP4 (H.264)" = "Convertir en MP4 (H.264)";
 "Convert to OBJ" = "Convertir en OBJ";
 "Convert to OpenDocument (ODT)" = "Convertir en OpenDocument (ODT)";
@@ -121,6 +123,8 @@
 "Convert to USDZ" = "Convertir en USDZ";
 "Convert to WAV" = "Convertir en WAV";
 "Convert to Web Archive" = "Convertir en Web Archive";
+"Convert to WebP" = "Convertir en WebP";
+"Convert to WebP (lossless)" = "Convertir en WebP (sans perte)";
 "Convert to Word (DOCX)" = "Convertir en Word (DOCX)";
 "Convert to Word 97 (DOC)" = "Convertir en Word 97 (DOC)";
 "ConvertDock on GitHub" = "ConvertDock sur GitHub";
@@ -129,6 +133,7 @@
 "Could not read “%@”." = "Impossible de lire « %@ ».";
 "Could not read pixels." = "Lecture des pixels impossible.";
 "Could not read the video frames." = "Impossible de lire les images de la vidéo.";
+"Could not start the MP3 encoder." = "Impossible de démarrer l'encodeur MP3.";
 "Count words" = "Compter les mots";
 "Create" = "Créer";
 "Create a disk image (.dmg)" = "Créer une image disque (.dmg)";
@@ -177,6 +182,7 @@
 "Every size from 16 to 1024 px" = "Toutes les tailles de 16 à 1024 px";
 "Extract all frames" = "Extraire toutes les images";
 "Extract audio (M4A)" = "Extraire l'audio (M4A)";
+"Extract audio (MP3)" = "Extraire l'audio (MP3)";
 "Extract GIF frames" = "Extraire les images du GIF";
 "Extract text" = "Extraire le texte";
 "Extract text (OCR)" = "Extraire le texte (OCR)";
@@ -224,6 +230,7 @@
 "Image → .psd" = "Image → .psd";
 "Image → .tga" = "Image → .tga";
 "Image → .tiff" = "Image → .tiff";
+"Image → .webp" = "Image → .webp";
 "Images" = "Images";
 "Images become frames" = "Les images deviennent des frames";
 "Images optimized for screen" = "Images optimisées pour l'écran";
@@ -237,9 +244,8 @@
 "Light AAC, for voice and sharing" = "AAC léger, pour la voix et le partage";
 "Lines: %d" = "Lignes : %d";
 "Longest side" = "Côté le plus long";
+"lossless" = "sans perte";
 "Lossless, compressed" = "Sans perte, compressé";
-"macOS cannot encode MP3 natively" = "macOS n'encode pas le MP3 nativement";
-"macOS cannot write WebP" = "macOS ne sait pas écrire le WebP";
 "Magic wand" = "Baguette magique";
 "Magic wand and brush, for touch-ups" = "Baguette magique et pinceau, pour retoucher";
 "Make an iPhone ringtone" = "Créer une sonnerie iPhone";
@@ -249,6 +255,7 @@
 "Markdown → styled HTML" = "Markdown → HTML stylé";
 "Mastering quality, keeps transparency" = "Qualité master, conserve la transparence";
 "Maximum compression" = "Compression maximale";
+"Maximum MP3 quality" = "Qualité MP3 maximale";
 "Merge PDFs" = "Fusionner les PDF";
 "merged" = "fusionné";
 "Middle frame of the video → PNG" = "Image du milieu de la vidéo → PNG";
@@ -258,6 +265,7 @@
 "mirrored" = "miroir";
 "Monochrome filter" = "Filtre monochrome";
 "Monospaced, ready to print" = "Police à chasse fixe, prêt à imprimer";
+"MP3 encoding failed." = "Échec de l'encodage MP3.";
 "muted" = "muet";
 "Next to the original file" = "À côté du fichier d'origine";
 "No %@ output: %@." = "Pas de sortie %@ : %@.";
@@ -296,8 +304,10 @@
 "PDF → .txt" = "PDF → .txt";
 "Pick the start and end" = "Choisir le début et la fin";
 "Pick up to 40 s → .m4r" = "Choisir jusqu'à 40 s → .m4r";
+"Pixel-perfect, smaller than PNG" = "Fidèle au pixel près, plus léger que le PNG";
 "Play a sound when done" = "Jouer un son à la fin";
 "Plays everywhere" = "Compatible partout";
+"Plays everywhere, high-quality VBR" = "Lisible partout, VBR haute qualité";
 "PNG/JPEG → SVG, 8 colors" = "PNG/JPEG → SVG, 8 couleurs";
 "Polygons and point clouds" = "Polygones et nuages de points";
 "Processing…" = "Traitement en cours…";
@@ -346,6 +356,7 @@
 "Slow motion" = "Ralenti";
 "Small PNG thumbnail" = "Petite vignette PNG";
 "Smallest file" = "Poids minimal";
+"Soundtrack as MP3" = "Piste sonore en MP3";
 "Soundtrack only" = "Piste sonore seule";
 "Speech recognition → .txt" = "Reconnaissance vocale → .txt";
 "Speech recognition is not allowed. Enable it in System Settings › Privacy & Security › Speech Recognition." = "La reconnaissance vocale n'est pas autorisée. Activez-la dans Réglages Système › Confidentialité et sécurité › Reconnaissance vocale.";
@@ -399,6 +410,7 @@
 "View result" = "Voir le résultat";
 "Waiting for settings…" = "En attente de réglages…";
 "Web page ready to publish" = "Page web prête à publier";
+"WebP encoding failed." = "Échec de l'encodage WebP.";
 "WebVTT → SRT" = "WebVTT → SRT";
 "Window" = "Fenêtre";
 "Windows format not supported" = "format Windows non pris en charge";

@@ -7,7 +7,7 @@
 <p align="center">
   <b>A native macOS file converter, built with Liquid Glass.</b><br>
   Drop a file on the icon → pick an action → done.<br>
-  117 tools · 100% on-device · zero dependencies · English & Français
+  123 tools · 100% on-device · English & Français
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 ## How it works
 
 - **Drop a file on the ConvertDock icon** (in the Dock or on your Desktop): a glass panel opens with **every conversion available** for that file.
-- **Type to search** — it understands natural queries like `pdf to png`, `wav vers mp3`, `heic en jpg`, `mov → mp4`, `pdf2png`. When a format can't be produced natively (MP3, WebP, MKV…), it tells you why and offers the closest equivalent.
+- **Type to search** — it understands natural queries like `pdf to png`, `wav vers mp3`, `heic en jpg`, `mov → mp4`, `pdf2png`. When a format can't be produced (MKV, OGG…), it tells you why and offers the closest equivalent.
 - Navigate with **↑ ↓**, run with **↩**, close with **Esc**.
 - Or use the main window: drag & drop, search, category filters, job history.
 - In Finder: right-click › **Services** › **Convert with ConvertDock**.
@@ -30,23 +30,23 @@
   <img src="docs/before-after.png" width="400" alt="Before / after preview">
 </p>
 
-Everything runs **on your Mac** using Apple frameworks (Vision, Core Image, ImageIO, AVFoundation, AVKit, PDFKit, AppKit). No file ever leaves your computer.
+Everything runs **on your Mac** using Apple frameworks (Vision, Speech, Core Image, ImageIO, AVFoundation, AVKit, PDFKit, Model I/O, AppKit), plus two open-source encoders for MP3 and WebP. No file ever leaves your computer.
 
 ## Tools
 
 | Category | Actions |
 |---|---|
 | ✨ **AI** | Remove background · Cut out and crop (sticker) · **Manual cutout** (magic wand, eraser, restore brush) · **PNG → SVG** in color or black & white · OCR (image → text) · **Transcribe audio/video to text** · **Generate subtitles (.srt)** · **Read text aloud to audio** · Blur faces · Upscale ×2 · Make a PDF searchable |
-| 🖼️ **Images** | Convert to PNG, JPEG, HEIC, AVIF, TIFF, GIF, BMP, ICO, PSD, JPEG 2000, OpenEXR, TGA, KTX, DDS, PDF · macOS `.icns` icon · **Favicon pack** (ICO + PNG 16→512 + HTML + manifest) · SVG → PNG @1x/@2x/@3x · Shrink, resize · Compress · Black & white · Rotate · Flip · Strip EXIF/GPS · Combine into a PDF · Animated GIF · Extract GIF frames |
-| 🎬 **Video** | **Trim** · MP4 (H.264) · HEVC (H.265) · **ProRes 422 / 4444** · MOV · M4V · 1080p · 720p · 480p · Remove sound · Speed up ×2 / slow down ×0.5 · Rotate 90° (lossless) · Extract audio · Video → GIF · Capture a frame · Extract all frames |
-| 🎧 **Audio** | **Trim** · **iPhone ringtone (.m4r)** · M4A (AAC, also 256 / 96 kbps) · Opus · WAV · AIFF · CAF · FLAC · Apple Lossless |
+| 🖼️ **Images** | Convert to PNG, JPEG, HEIC, **WebP** (lossy or lossless), AVIF, TIFF, GIF, BMP, ICO, PSD, JPEG 2000, OpenEXR, TGA, KTX, DDS, PDF · macOS `.icns` icon · **Favicon pack** (ICO + PNG 16→512 + HTML + manifest) · SVG → PNG @1x/@2x/@3x · Shrink, resize · Compress · Black & white · Rotate · Flip · Strip EXIF/GPS · Combine into a PDF · Animated GIF · Extract GIF frames |
+| 🎬 **Video** | **Trim** · MP4 (H.264) · HEVC (H.265) · **ProRes 422 / 4444** · MOV · M4V · 1080p · 720p · 480p · Remove sound · Speed up ×2 / slow down ×0.5 · Rotate 90° (lossless) · Extract audio (M4A or MP3) · Video → GIF · Capture a frame · Extract all frames |
+| 🎧 **Audio** | **Trim** · **MP3** (high-quality VBR or 320 kbps) · **iPhone ringtone (.m4r)** · M4A (AAC, also 256 / 96 kbps) · Opus · WAV · AIFF · CAF · FLAC · Apple Lossless |
 | 📄 **Documents** | Markdown, RTF, DOCX, DOC, ODT, HTML, TXT → PDF, Word, ODT, RTF, RTFD, HTML, Web Archive, TXT · Markdown → styled HTML · Code → PDF · Word count · Subtitles SRT ⇄ WebVTT |
 | 📕 **PDF** | PDF → PNG / JPEG / TXT / RTF · Merge · Split pages · Compress · Rotate |
 | 🧊 **3D** | OBJ, STL, PLY, USD, USDZ, Alembic → **USDZ** (AR Quick Look), OBJ, STL (3D printing), PLY, USD |
 | `{}` **Data** | JSON ⇄ YAML · JSON ⇄ Plist · JSON ⇄ CSV · CSV → HTML / Markdown table · Plist binary ⇄ XML · Format / minify JSON · Base64 · SHA-256 |
 | 🗜️ **Archives** | ZIP · TAR.GZ · TAR.XZ · Apple Archive (.aar) · **Disk image (.dmg)** · Decompress (zip, tar, gz, xz, aar…) |
 
-> Not possible natively (would require bundling third-party encoders): writing MP3, WebP, MKV, OGG, EPUB, XLSX. The smart search explains this and offers the closest native format.
+> Still not supported: writing MKV, OGG, EPUB, XLSX. The smart search explains this and offers the closest format.
 
 ### Results you can check — and fix
 
@@ -129,13 +129,22 @@ Adding a tool = adding a `Tool` (English title, SF Symbol, accepted types, keywo
 **ConvertDock** est un convertisseur de fichiers natif pour macOS, en Liquid Glass, entièrement traduit en français (l'app suit la langue du système).
 
 - **Déposez un fichier sur l'icône** (Dock ou Bureau) : un panneau en verre propose toutes les conversions possibles.
-- **Recherche naturelle** : « pdf en png », « wav vers mp3 », « heic en jpg »… Si un format n'est pas disponible nativement (MP3, WebP…), l'app l'explique et propose l'équivalent.
-- **117 outils** : détourage automatique et manuel, PNG → SVG, OCR, transcription et sous-titres, lecture à voix haute, pack favicon, conversions d'images, vidéo (ProRes, vitesse, rotation), audio (Opus, sonnerie iPhone), documents, PDF, 3D (USDZ, STL, OBJ), données (YAML), archives (DMG, TAR.GZ), **trim audio/vidéo**.
+- **Recherche naturelle** : « pdf en png », « wav vers mp3 », « heic en jpg »… Si un format n'est pas disponible (MKV, OGG…), l'app l'explique et propose l'équivalent.
+- **123 outils** : détourage automatique et manuel, PNG → SVG, OCR, transcription et sous-titres, lecture à voix haute, pack favicon, **MP3** et **WebP**, conversions d'images, vidéo (ProRes, vitesse, rotation), audio (Opus, sonnerie iPhone), documents, PDF, 3D (USDZ, STL, OBJ), données (YAML), archives (DMG, TAR.GZ), **trim audio/vidéo**.
 - **Aperçu avant/après** de chaque résultat image, et bouton **Retoucher** après un détourage.
 - 100 % local, aucune dépendance.
 
 Installation : `git clone https://github.com/sivelswhy/ConvertDock.git && cd ConvertDock && make install` (macOS 26 minimum).
 
+## Third-party libraries
+
+| Library | Used for | License |
+|---|---|---|
+| [libwebp](https://chromium.googlesource.com/webm/libwebp) via [libwebp-Xcode](https://github.com/SDWebImage/libwebp-Xcode) | WebP encoding | BSD 3-Clause |
+| [LAME 3.100](https://lame.sourceforge.io) (vendored in `Sources/CLame`) | MP3 encoding | LGPL 2.0 — see `Sources/CLame/COPYING` |
+
+LAME's full source is included in this repository, so you can modify and rebuild it as the LGPL allows.
+
 ## License
 
-MIT
+ConvertDock is MIT-licensed. Bundled libraries keep their own licenses (see above).

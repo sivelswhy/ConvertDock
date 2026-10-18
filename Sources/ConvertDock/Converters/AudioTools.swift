@@ -15,6 +15,10 @@ enum AudioTools {
                 }
                 return outputs
             },
+            mp3(id: "audio.to.mp3", title: "Convert to MP3", subtitle: "Plays everywhere, high-quality VBR",
+                mode: .vbr(quality: 2), suffix: nil, excludes: [.mp3], keywords: ["mp3", "lame", "compatible", "musique"]),
+            mp3(id: "audio.to.mp3.320", title: "Convert to MP3 320 kbps", subtitle: "Maximum MP3 quality",
+                mode: .cbr(kbps: 320), suffix: "320k", excludes: [], keywords: ["mp3", "320", "haute qualité", "cbr"]),
             pcm(id: "audio.to.wav", name: "WAV", ext: "wav", type: .wav, bigEndian: false, keywords: ["wav", "wave", "non compressé"]),
             pcm(id: "audio.to.aiff", name: "AIFF", ext: "aiff", type: .aiff, bigEndian: true, keywords: ["aiff", "aif", "non compressé"]),
             pcm(id: "audio.to.caf", name: "CAF", ext: "caf", type: UTType("com.apple.coreaudio-format") ?? .audio, bigEndian: false, keywords: ["caf", "core audio"]),
@@ -32,6 +36,18 @@ enum AudioTools {
                     ext: "m4a", suffix: "96k", type: nil, format: kAudioFormatMPEG4AAC, bitRate: 96_000,
                     keywords: ["aac", "m4a", "96", "léger", "compresser", "débit", "bitrate"]),
         ]
+    }
+
+    private static func mp3(id: String, title: String, subtitle: String, mode: MP3Encoder.Mode, suffix: String?,
+                            excludes: [UTType], keywords: [String]) -> Tool {
+        Tool(id: id, title: title, subtitle: subtitle, symbol: "music.note", category: .audio, inputs: [.audio],
+             excludes: excludes, keywords: ["convertir"] + keywords) { inputs, ctx in
+            try inputs.map { url in
+                let out = ctx.output(for: url, ext: "mp3", suffix: suffix)
+                try MP3Encoder.encode(url, to: out, mode: mode, progress: ctx.progress)
+                return out
+            }
+        }
     }
 
     private static func pcm(id: String, name: String, ext: String, type: UTType, bigEndian: Bool, keywords: [String]) -> Tool {

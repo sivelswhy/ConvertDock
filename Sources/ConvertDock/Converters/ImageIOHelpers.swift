@@ -37,6 +37,11 @@ enum ImageIOHelpers {
     }
 
     static func write(_ image: CGImage, to url: URL, type: UTType, quality: Double? = nil) throws {
+        // ImageIO ne sait pas écrire le WebP : on passe par libwebp.
+        if type == .webP {
+            try WebPEncoder.write(image, to: url, quality: quality ?? 0.82)
+            return
+        }
         let needsOpaque = type.conforms(to: .jpeg) || type == .bmp
         let finalImage = needsOpaque ? flatten(image) : image
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil) else {
@@ -115,6 +120,7 @@ enum ImageIOHelpers {
 
     /// Type de sortie « naturel » pour réécrire une image dans son propre format.
     static func sameFormat(for url: URL) -> (UTType, String) {
+        if url.contentType == .webP { return (.webP, "webp") }
         if let type = url.contentType, (CGImageDestinationCopyTypeIdentifiers() as? [String] ?? []).contains(type.identifier) {
             return (type, url.pathExtension.isEmpty ? (type.preferredFilenameExtension ?? "png") : url.pathExtension)
         }

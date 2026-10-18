@@ -29,6 +29,7 @@ enum ImageTools {
         Target(type: .jpeg, ext: "jpg", name: "JPEG", quality: 0.9, keywords: ["jpg", "photo"]),
         Target(type: .heic, ext: "heic", name: "HEIC", quality: 0.85, keywords: ["heif", "iphone"]),
         Target(type: .avif, ext: "avif", name: "AVIF", quality: 0.8, keywords: ["web", "moderne"]),
+        Target(type: .webP, ext: "webp", name: "WebP", quality: 0.82, keywords: ["web", "google", "site", "léger"]),
         Target(type: .tiff, ext: "tiff", name: "TIFF", keywords: ["tif", "impression"]),
         Target(type: .gif, ext: "gif", name: "GIF"),
         Target(type: .bmp, ext: "bmp", name: "BMP", keywords: ["bitmap", "windows"]),
@@ -81,6 +82,22 @@ enum ImageTools {
                 let frames = sizes.map { ImageIOHelpers.resize(image, maxSide: $0, square: true) }
                 let out = ctx.output(for: url, ext: "icns")
                 try ImageIOHelpers.writeMulti(frames, to: out, type: .icns)
+                return out
+            }
+        })
+
+        tools.append(Tool(
+            id: "image.to.webp.lossless",
+            title: "Convert to WebP (lossless)",
+            subtitle: "Pixel-perfect, smaller than PNG",
+            symbol: "photo.on.rectangle.angled",
+            category: .image,
+            inputs: [.image, svg],
+            keywords: ["webp", "lossless", "sans perte", "web", "png"]
+        ) { inputs, ctx in
+            try inputs.map { url in
+                let out = ctx.output(for: url, ext: "webp", suffix: url.contentType == .webP ? L("lossless") : nil)
+                try WebPEncoder.write(try ImageIOHelpers.load(url), to: out, lossless: true)
                 return out
             }
         })

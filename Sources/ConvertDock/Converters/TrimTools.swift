@@ -74,6 +74,14 @@ enum TrimTools {
             try AudioTools.transcode(url, to: out, settings: settings, range: range, progress: ctx.progress)
             return out
         }
+        // MP3 : on reste en MP3.
+        if ext == "mp3" {
+            let out = ctx.output(for: url, ext: "mp3", suffix: L("trimmed"))
+            let source = try AVAudioFile(forReading: url)
+            let range = (p.trimStart ?? 0)...(p.trimEnd ?? Double(source.length) / source.processingFormat.sampleRate)
+            try MP3Encoder.encode(url, to: out, mode: .vbr(quality: 2), range: range, progress: ctx.progress)
+            return out
+        }
         let out = ctx.output(for: url, ext: "m4a", suffix: L("trimmed"))
         try await VideoTools.exportAsset(AVURLAsset(url: url), preset: AVAssetExportPresetAppleM4A, to: out, type: .m4a,
                                          timeRange: timeRange(p), progress: ctx.progress)

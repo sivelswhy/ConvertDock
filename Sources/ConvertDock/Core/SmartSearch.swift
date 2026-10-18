@@ -137,15 +137,13 @@ enum SmartSearch {
     ]
 
     private static let alternatives: [String: String] = [
-        "mp3": "m4a", "ogg": "opus", "wma": "m4a", "webp": "avif",
+        "ogg": "opus", "wma": "mp3",
         "mkv": "mp4", "avi": "mp4", "webm": "mp4", "wmv": "mp4", "rar": "zip", "7z": "zip", "pages": "docx",
     ]
 
     /// Formats que macOS ne sait pas produire nativement.
     private static var unsupportedOutputs: [String: String] {
         [
-            "mp3": L("macOS cannot encode MP3 natively"),
-            "webp": L("macOS cannot write WebP"),
             "ogg": L("format not supported by macOS"),
             "mkv": L("container not supported by macOS"),
             "avi": L("container not supported by macOS"),
@@ -205,7 +203,7 @@ enum SmartSearch {
         "image.compress": ["jpg"],
         "video.to.hevc": ["hevc", "mp4"], "video.1080": ["mp4"], "video.720": ["mp4"], "video.480": ["mp4"],
         "video.audio": ["m4a", "audio"], "video.poster": ["png"], "video.trim": ["mov", "mp4"],
-        "audio.to.alac": ["m4a"], "audio.trim": ["m4a", "wav", "aiff", "flac"],
+        "audio.to.alac": ["m4a"],
         "doc.md.to.html": ["html"], "doc.code.to.pdf": ["pdf"], "doc.stats": ["txt"],
         "pdf.to.png": ["png"], "pdf.to.jpg": ["jpg"], "pdf.merge": ["pdf"], "pdf.split": ["pdf"], "pdf.compress": ["pdf"],
         "pdf.rotate": ["pdf"],
@@ -219,6 +217,7 @@ enum SmartSearch {
         "image.favicon": ["favicon", "ico", "png"], "image.svg.scales": ["png"],
         "video.to.prores422": ["prores", "mov"], "video.to.prores4444": ["prores", "mov"],
         "video.mute": ["mov"], "video.speed.2x": ["mp4"], "video.speed.half": ["mp4"], "video.rotate": ["mov"], "video.frames": ["jpg"],
+        "audio.to.mp3.320": ["mp3"], "image.to.webp.lossless": ["webp"], "audio.trim": ["m4a", "mp3", "wav", "aiff", "flac"],
         "audio.ringtone": ["m4r"], "audio.to.opus": ["opus", "caf"], "audio.to.aac256": ["m4a"], "audio.to.aac96": ["m4a"],
         "3d.to.usdc": ["usd", "usdc"],
     ]
