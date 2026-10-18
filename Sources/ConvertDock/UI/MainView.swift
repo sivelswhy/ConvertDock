@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 
 struct MainView: View {
     @Bindable var model = AppModel.shared
-    @ViewState private var query = ""
     @ViewState private var category: ToolCategory?
     @ViewState private var dropTargeted = false
     @ViewState private var showActivity = true
@@ -17,7 +16,7 @@ struct MainView: View {
     }
 
     private var search: SmartSearch.Result {
-        SmartSearch.search(available.filter { category == nil || $0.category == category }, query: query)
+        SmartSearch.search(available.filter { category == nil || $0.category == category }, query: model.searchQuery)
     }
 
     private var results: [Tool] { search.tools }
@@ -65,7 +64,7 @@ struct MainView: View {
     private var topBar: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                GlassSearchField(text: $query, placeholder: L("Search: pdf to png, wav to m4a, remove background, svg…"), height: 40, focus: $searchFocused)
+                GlassSearchField(text: $model.searchQuery, placeholder: L("Search: pdf to png, wav to m4a, remove background, svg…"), height: 40, focus: $searchFocused)
                 Button(action: openFiles) {
                     Label(L("Open"), systemImage: "plus")
                         .frame(height: 26)
@@ -133,7 +132,7 @@ struct MainView: View {
         ScrollView {
             if results.isEmpty {
                 ContentUnavailableView(
-                    available.isEmpty ? L("No actions for these files") : L("No results for “%@”", query),
+                    available.isEmpty ? L("No actions for these files") : L("No results for “%@”", model.searchQuery),
                     systemImage: "magnifyingglass",
                     description: Text(available.isEmpty ? L("This file type is not supported yet.") : L("Try “svg”, “mp4”, “pdf”…"))
                 )
@@ -235,14 +234,7 @@ struct MainView: View {
 
     private func activate(_ tool: Tool) {
         if model.files.isEmpty {
-            // Pas encore de fichier : on en demande un, compatible avec l'outil.
-            let panel = NSOpenPanel()
-            panel.allowsMultipleSelection = true
-            panel.canChooseDirectories = tool.inputs.contains(.item)
-            panel.allowedContentTypes = tool.inputs
-            panel.message = tool.displayTitle
-            guard panel.runModal() == .OK, tool.accepts(all: panel.urls) else { return }
-            AppModel.shared.run(tool, on: panel.urls, presentResult: true)
+            AppModel.shared.chooseFilesAndRun(tool)
         } else {
             AppModel.shared.run(tool, on: model.files, presentResult: true)
         }

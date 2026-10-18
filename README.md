@@ -23,6 +23,7 @@
 - Navigate with **↑ ↓**, run with **↩**, close with **Esc**.
 - Or use the main window: drag & drop, search, category filters, job history.
 - In Finder: right-click › **Services** › **Convert with ConvertDock**.
+- **From Spotlight**: type `png to webp`, `vers mp3`, `remove background`… — ConvertDock's tools show up as results; pick one to choose a file and run it. **Search in App** opens your query directly in ConvertDock.
 
 <p align="center">
   <img src="docs/quick-panel.png" width="400" alt="Quick panel">
@@ -85,6 +86,7 @@ make run     # build and launch
 CD=/Applications/ConvertDock.app/Contents/MacOS/ConvertDock
 $CD --list                                    # list tools and their identifiers
 $CD --search "wav to mp3"                     # try the smart search
+$CD --spotlight "png en webp"                 # query the app's Spotlight index
 $CD --run ai.removebg photo.jpg               # remove background
 $CD --run ai.vectorize.color logo.png         # PNG → SVG
 $CD --run video.trim --trim 12.5 30 film.mov  # keep 12.5 s → 30 s
@@ -129,6 +131,7 @@ Adding a tool = adding a `Tool` (English title, SF Symbol, accepted types, keywo
 **ConvertDock** est un convertisseur de fichiers natif pour macOS, en Liquid Glass, entièrement traduit en français (l'app suit la langue du système).
 
 - **Déposez un fichier sur l'icône** (Dock ou Bureau) : un panneau en verre propose toutes les conversions possibles.
+- **Depuis Spotlight** : tapez « png en webp », « vers mp3 », « détourer »… les outils de ConvertDock apparaissent dans les résultats.
 - **Recherche naturelle** : « pdf en png », « wav vers mp3 », « heic en jpg »… Si un format n'est pas disponible (MKV, OGG…), l'app l'explique et propose l'équivalent.
 - **123 outils** : détourage automatique et manuel, PNG → SVG, OCR, transcription et sous-titres, lecture à voix haute, pack favicon, **MP3** et **WebP**, conversions d'images, vidéo (ProRes, vitesse, rotation), audio (Opus, sonnerie iPhone), documents, PDF, 3D (USDZ, STL, OBJ), données (YAML), archives (DMG, TAR.GZ), **trim audio/vidéo**.
 - **Aperçu avant/après** de chaque résultat image, et bouton **Retoucher** après un détourage.

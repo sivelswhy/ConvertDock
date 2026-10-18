@@ -16,6 +16,11 @@ enum CommandLineInterface {
             for key in NSOrderedSet(array: keys) { print(key) }
             return 0
         }
+        if args.first == "--spotlight", args.count > 1 {
+            // Diagnostic : interroge l'index Spotlight de l'app (à lancer depuis l'app installée).
+            for title in await SpotlightIndex.query(args[1...].joined(separator: " ")) { print(title) }
+            return 0
+        }
         if args.first == "--search", args.count > 1 {
             let result = SmartSearch.search(ToolRegistry.all, query: args[1...].joined(separator: " "))
             if let note = result.note { print("💡 \(note)") }

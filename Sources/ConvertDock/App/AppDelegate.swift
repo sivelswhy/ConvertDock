@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.servicesProvider = self
         NSUpdateDynamicServices()
         launched = true
+        // Indexation Spotlight des outils, après l'affichage pour ne pas retarder le lancement.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { SpotlightIndex.refreshIfNeeded() }
         if pendingFiles.isEmpty {
             MainWindowController.shared.show()
         } else {
@@ -32,6 +34,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             pendingFiles += files
         }
+    }
+
+    /// Résultat choisi dans Spotlight (outil ou « Rechercher dans l'app »).
+    func application(_ application: NSApplication, continue userActivity: NSUserActivity,
+                     restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void) -> Bool {
+        SpotlightIndex.handle(userActivity)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

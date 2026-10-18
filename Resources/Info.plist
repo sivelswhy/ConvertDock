@@ -31,6 +31,9 @@
 	<string>public.app-category.productivity</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>ConvertDock transcribes audio and video on your Mac to create text and subtitles.</string>
+	<!-- Spotlight : « Rechercher dans l'app » reprend la requête dans ConvertDock. -->
+	<key>CoreSpotlightContinuation</key>
+	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

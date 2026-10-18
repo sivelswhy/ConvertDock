@@ -126,6 +126,9 @@ enum SmartSearch {
     /// Formats de fichier sans type système, reconnus par leur extension.
     private static let extensionOnly: Set<String> = ["srt", "vtt", "obj", "stl", "ply", "usda", "usdc", "abc", "yaml", "aar"]
 
+    /// Formats reconnus, pour générer les formulations indexées par Spotlight.
+    static var searchableFormats: [String] { knownFormats.sorted() }
+
     private static let knownFormats: Set<String> = [
         "png", "jpg", "heic", "avif", "tiff", "gif", "bmp", "ico", "icns", "psd", "svg", "webp", "raw", "dng", "cr2", "nef",
         "pdf", "mp4", "mov", "m4v", "hevc", "mkv", "avi", "webm", "wmv", "mp3", "wav", "aiff", "caf", "flac", "m4a", "ogg",

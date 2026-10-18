@@ -62,6 +62,20 @@ final class AppModel {
     var jobs: [Job] = []
     /// Résultat affiché en grand dans la fenêtre principale.
     var preview: Job?
+    /// Recherche de la fenêtre principale (aussi remplie depuis Spotlight).
+    var searchQuery = ""
+
+    /// Demande des fichiers compatibles avec l'outil, puis le lance (résultat affiché dans la fenêtre principale).
+    func chooseFilesAndRun(_ tool: Tool) {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = tool.inputs.contains(.item)
+        panel.allowedContentTypes = tool.inputs + tool.inputExtensions.compactMap { UTType(filenameExtension: $0) }
+        panel.message = tool.displayTitle
+        NSApp.activate()
+        guard panel.runModal() == .OK, tool.accepts(all: panel.urls) else { return }
+        run(tool, on: panel.urls, presentResult: true)
+    }
 
     @discardableResult
     func run(_ tool: Tool, on urls: [URL], presentResult: Bool = false) -> Job {
