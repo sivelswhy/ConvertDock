@@ -19,12 +19,7 @@ enum PDFTools {
             Tool(id: "pdf.to.rtf", title: "Convert to RTF", subtitle: "Formatted, editable text", symbol: "doc.text",
                  category: .pdf, inputs: [.pdf], keywords: ["rtf", "word", "éditable", "texte"]) { inputs, ctx in
                 try inputs.map { url in
-                    let document = try open(url)
-                    let text = NSMutableAttributedString()
-                    for i in 0..<document.pageCount {
-                        if let page = document.page(at: i)?.attributedString { text.append(page) }
-                        text.append(NSAttributedString(string: "\n\u{0C}"))
-                    }
+                    let text = attributedText(try open(url))
                     let data = try text.data(from: NSRange(location: 0, length: text.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
                     let out = ctx.output(for: url, ext: "rtf")
                     try data.write(to: out)
@@ -98,7 +93,133 @@ enum PDFTools {
                     return out
                 }
             },
+            Tool(id: "pdf.to.docx", title: "Convert to Word (DOCX)", subtitle: "Editable text, for Word and Pages", symbol: "doc.text",
+                 category: .pdf, inputs: [.pdf], keywords: ["word", "docx", "office", "éditable", "modifier", "pages"]) { inputs, ctx in
+                var outputs: [URL] = []
+                for url in inputs {
+                    let text = attributedText(try open(url))
+                    let out = ctx.output(for: url, ext: "docx")
+                    try await DocumentTools.write(text, to: out, ext: "docx")
+                    outputs.append(out)
+                }
+                return outputs
+            },
+            Tool(id: "pdf.encrypt", title: "Protect with a password", subtitle: "Password required to open",
+                 symbol: "lock.doc", category: .pdf, inputs: [.pdf],
+                 keywords: ["mot de passe", "password", "protéger", "chiffrer", "verrouiller", "sécuriser", "encrypt"],
+                 configure: { url in await TextPrompt.password(url) }) { inputs, ctx in
+                guard let password = ctx.parameters.text, !password.isEmpty else { throw ToolError.failed(L("No password entered.")) }
+                return try inputs.map { url in
+                    let document = try open(url)
+                    let out = ctx.output(for: url, ext: "pdf", suffix: L("protected"))
+                    guard document.write(to: out, withOptions: [.userPasswordOption: password, .ownerPasswordOption: password]) else {
+                        throw ToolError.failed(L("Failed to write the PDF."))
+                    }
+                    return out
+                }
+            },
+            Tool(id: "pdf.decrypt", title: "Remove the password", subtitle: "Unlocked copy, with the right password",
+                 symbol: "lock.open", category: .pdf, inputs: [.pdf],
+                 keywords: ["mot de passe", "password", "déverrouiller", "déchiffrer", "unlock", "decrypt"],
+                 configure: { url in await TextPrompt.password(url) }) { inputs, ctx in
+                try inputs.map { url in
+                    guard let document = PDFDocument(url: url) else { throw ToolError.unreadable(url) }
+                    if document.isLocked, !document.unlock(withPassword: ctx.parameters.text ?? "") {
+                        throw ToolError.failed(L("Wrong password."))
+                    }
+                    // Les pages copiées dans un nouveau document perdent le chiffrement d'origine.
+                    let copy = PDFDocument()
+                    for i in 0..<document.pageCount {
+                        if let page = document.page(at: i) { copy.insert(page, at: copy.pageCount) }
+                    }
+                    let out = ctx.output(for: url, ext: "pdf", suffix: L("unlocked"))
+                    guard copy.write(to: out) else { throw ToolError.failed(L("Failed to write the PDF.")) }
+                    return out
+                }
+            },
+            Tool(id: "pdf.page.numbers", title: "Number the pages", subtitle: "“3 / 12” at the bottom of each page",
+                 symbol: "number", category: .pdf, inputs: [.pdf],
+                 keywords: ["numéros", "numéroter", "pagination", "page numbers", "bas de page"]) { inputs, ctx in
+                try inputs.map { url in
+                    let out = ctx.output(for: url, ext: "pdf", suffix: L("numbered"))
+                    try stamp(url, to: out) { rect, index, count in
+                        let text = NSAttributedString(string: "\(index + 1) / \(count)", attributes: [
+                            .font: NSFont.systemFont(ofSize: 10), .foregroundColor: NSColor.darkGray,
+                        ])
+                        text.draw(at: CGPoint(x: rect.midX - text.size().width / 2, y: rect.minY + 20))
+                    }
+                    return out
+                }
+            },
+            Tool(id: "pdf.watermark", title: "Add a watermark", subtitle: "Diagonal text on every page",
+                 symbol: "signature", category: .pdf, inputs: [.pdf],
+                 keywords: ["filigrane", "watermark", "confidentiel", "brouillon", "copie", "tampon"],
+                 configure: { url in await TextPrompt.watermark(url) }) { inputs, ctx in
+                let label = ctx.parameters.text ?? L("CONFIDENTIAL")
+                return try inputs.map { url in
+                    let out = ctx.output(for: url, ext: "pdf", suffix: L("watermarked"))
+                    try stamp(url, to: out) { rect, _, _ in
+                        let size = min(rect.width, rect.height) / CGFloat(max(4, label.count)) * 1.6
+                        let text = NSAttributedString(string: label, attributes: [
+                            .font: NSFont.boldSystemFont(ofSize: size), .foregroundColor: NSColor.red.withAlphaComponent(0.22),
+                        ])
+                        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+                        ctx.saveGState()
+                        ctx.translateBy(x: rect.midX, y: rect.midY)
+                        ctx.rotate(by: atan2(rect.height, rect.width))
+                        let textSize = text.size()
+                        text.draw(at: CGPoint(x: -textSize.width / 2, y: -textSize.height / 2))
+                        ctx.restoreGState()
+                    }
+                    return out
+                }
+            },
+            Tool(id: "pdf.reverse", title: "Reverse page order", subtitle: "Last page first",
+                 symbol: "arrow.up.arrow.down", category: .pdf, inputs: [.pdf],
+                 keywords: ["inverser", "ordre", "pages", "reverse", "scanner", "recto verso"]) { inputs, ctx in
+                try inputs.map { url in
+                    let document = try open(url)
+                    let reversed = PDFDocument()
+                    for i in stride(from: document.pageCount - 1, through: 0, by: -1) {
+                        if let page = document.page(at: i) { reversed.insert(page, at: reversed.pageCount) }
+                    }
+                    let out = ctx.output(for: url, ext: "pdf", suffix: L("reversed"))
+                    guard reversed.write(to: out) else { throw ToolError.failed(L("Failed to write the PDF.")) }
+                    return out
+                }
+            },
         ]
+    }
+
+    /// Texte mis en forme de toutes les pages, séparées par un saut de page.
+    static func attributedText(_ document: PDFDocument) -> NSAttributedString {
+        let text = NSMutableAttributedString()
+        for i in 0..<document.pageCount {
+            if let page = document.page(at: i)?.attributedString { text.append(page) }
+            text.append(NSAttributedString(string: "\n\u{0C}"))
+        }
+        return text
+    }
+
+    /// Redessine chaque page puis dessine par-dessus (`draw` reçoit le rectangle de la page dans un contexte AppKit).
+    /// shortcut: les liens et champs de formulaire ne sont pas recopiés ; passer par des PDFAnnotation si besoin.
+    static func stamp(_ url: URL, to out: URL, draw: (CGRect, Int, Int) -> Void) throws {
+        let document = try open(url)
+        guard let pdf = CGContext(out as CFURL, mediaBox: nil, nil) else { throw ToolError.failed(L("Failed to create the PDF.")) }
+        for i in 0..<document.pageCount {
+            guard let page = document.page(at: i) else { continue }
+            let bounds = page.bounds(for: .cropBox)
+            let size = page.rotation % 180 == 0 ? bounds.size : CGSize(width: bounds.height, height: bounds.width)
+            var box = CGRect(origin: .zero, size: size)
+            pdf.beginPage(mediaBox: &box)
+            page.draw(with: .cropBox, to: pdf)
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(cgContext: pdf, flipped: false)
+            draw(box, i, document.pageCount)
+            NSGraphicsContext.restoreGraphicsState()
+            pdf.endPage()
+        }
+        pdf.closePDF()
     }
 
     private static func pagesToImages(id: String, name: String, type: UTType, ext: String) -> Tool {

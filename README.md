@@ -7,7 +7,7 @@
 <p align="center">
   <b>A native macOS file converter, built with Liquid Glass.</b><br>
   Drop a file on the icon → pick an action → done.<br>
-  123 tools · 100% on-device · English & Français
+  154 tools · 100% on-device · English & Français
 </p>
 
 <p align="center">
@@ -38,14 +38,14 @@ Everything runs **on your Mac** using Apple frameworks (Vision, Speech, Core Ima
 | Category | Actions |
 |---|---|
 | ✨ **AI** | Remove background · Cut out and crop (sticker) · **Manual cutout** (magic wand, eraser, restore brush) · **PNG → SVG** in color or black & white · OCR (image → text) · **Transcribe audio/video to text** · **Generate subtitles (.srt)** · **Read text aloud to audio** · Blur faces · Upscale ×2 · Make a PDF searchable |
-| 🖼️ **Images** | Convert to PNG, JPEG, HEIC, **WebP** (lossy or lossless), AVIF, TIFF, GIF, BMP, ICO, PSD, JPEG 2000, OpenEXR, TGA, KTX, DDS, PDF · macOS `.icns` icon · **Favicon pack** (ICO + PNG 16→512 + HTML + manifest) · SVG → PNG @1x/@2x/@3x · Shrink, resize · Compress · Black & white · Rotate · Flip · Strip EXIF/GPS · Combine into a PDF · Animated GIF · Extract GIF frames |
-| 🎬 **Video** | **Trim** · MP4 (H.264) · HEVC (H.265) · **ProRes 422 / 4444** · MOV · M4V · 1080p · 720p · 480p · Remove sound · Speed up ×2 / slow down ×0.5 · Rotate 90° (lossless) · Extract audio (M4A or MP3) · Video → GIF · Capture a frame · Extract all frames |
-| 🎧 **Audio** | **Trim** · **MP3** (high-quality VBR or 320 kbps) · **iPhone ringtone (.m4r)** · M4A (AAC, also 256 / 96 kbps) · Opus · WAV · AIFF · CAF · FLAC · Apple Lossless |
-| 📄 **Documents** | Markdown, RTF, DOCX, DOC, ODT, HTML, TXT → PDF, Word, ODT, RTF, RTFD, HTML, Web Archive, TXT · Markdown → styled HTML · Code → PDF · Word count · Subtitles SRT ⇄ WebVTT |
-| 📕 **PDF** | PDF → PNG / JPEG / TXT / RTF · Merge · Split pages · Compress · Rotate |
+| 🖼️ **Images** | Convert to PNG, JPEG, HEIC, **WebP** (lossy or lossless), AVIF, TIFF, GIF, BMP, ICO, PSD, JPEG 2000, OpenEXR, TGA, KTX, DDS, PDF · macOS `.icns` icon · **Favicon pack** (ICO + PNG 16→512 + HTML + manifest) · SVG → PNG @1x/@2x/@3x · Shrink, resize · Compress · Black & white · Rotate · Flip · Strip EXIF/GPS · Combine into a PDF · Animated GIF · Extract GIF frames · Rotate left · Flip vertically · Crop to square · Invert colors · **Watermark** · Show EXIF metadata · **Color palette** (SVG + hex) · **QR code** (create from text/link, read QR and barcodes) |
+| 🎬 **Video** | **Trim** · MP4 (H.264) · HEVC (H.265) · **ProRes 422 / 4444** · MOV · M4V · 1080p · 720p · 480p · Remove sound · Speed up ×2 / slow down ×0.5 · Rotate 90° (lossless) · Extract audio (M4A or MP3) · Video → GIF · Capture a frame · Extract all frames · **Compress for email (≤ 25 MB)** · **Join videos** · **Replace the soundtrack** · Contact sheet (16 thumbnails) |
+| 🎧 **Audio** | **Trim** · **MP3** (high-quality VBR or 320 kbps) · **iPhone ringtone (.m4r)** · M4A (AAC, also 256 / 96 kbps) · Opus · WAV · AIFF · CAF · FLAC · Apple Lossless · **Normalize volume** · Convert to mono · **Join audio files** |
+| 📄 **Documents** | Markdown, RTF, DOCX, DOC, ODT, HTML, TXT, **EPUB** → PDF, Word, ODT, RTF, RTFD, HTML, Web Archive, TXT · Markdown → styled HTML · Code → PDF · Word count · Subtitles SRT ⇄ WebVTT |
+| 📕 **PDF** | PDF → PNG / JPEG / TXT / RTF / **Word (DOCX)** · Merge · Split pages · Compress · Rotate · **Add / remove a password** · **Number the pages** · **Watermark** · Reverse page order |
 | 🧊 **3D** | OBJ, STL, PLY, USD, USDZ, Alembic → **USDZ** (AR Quick Look), OBJ, STL (3D printing), PLY, USD |
-| `{}` **Data** | JSON ⇄ YAML · JSON ⇄ Plist · JSON ⇄ CSV · CSV → HTML / Markdown table · Plist binary ⇄ XML · Format / minify JSON · Base64 · SHA-256 |
-| 🗜️ **Archives** | ZIP · TAR.GZ · TAR.XZ · Apple Archive (.aar) · **Disk image (.dmg)** · Decompress (zip, tar, gz, xz, aar…) |
+| `{}` **Data** | JSON ⇄ YAML · JSON ⇄ Plist · JSON ⇄ CSV · CSV → HTML / Markdown table · Plist binary ⇄ XML · Format / minify JSON · Base64 · SHA-256 · MD5 · XML → JSON · CSV ⇄ TSV · **Excel (XLSX) → CSV** · **SQLite → CSV** · Hex dump |
+| 🗜️ **Archives** | ZIP · **ZIP with password** · TAR.GZ · TAR.XZ · TAR.BZ2 · Apple Archive (.aar) · **Disk image (.dmg)** · Decompress (zip, **rar**, **7z**, tar, gz, bz2, xz, aar, **iso**, **dmg**, cab, lzh, cpio, xar/pkg, jar, ipa, apk, epub…) |
 
 > Still not supported: writing MKV, OGG, EPUB, XLSX. The smart search explains this and offers the closest format.
 
@@ -91,6 +91,7 @@ $CD --run ai.removebg photo.jpg               # remove background
 $CD --run ai.vectorize.color logo.png         # PNG → SVG
 $CD --run video.trim --trim 12.5 30 film.mov  # keep 12.5 s → 30 s
 $CD --run pdf.merge a.pdf b.pdf c.pdf         # merge
+$CD --run pdf.encrypt --text secret doc.pdf   # tools that ask for text (password, watermark)
 ```
 
 ## Settings
@@ -133,7 +134,7 @@ Adding a tool = adding a `Tool` (English title, SF Symbol, accepted types, keywo
 - **Déposez un fichier sur l'icône** (Dock ou Bureau) : un panneau en verre propose toutes les conversions possibles.
 - **Depuis Spotlight** : tapez « png en webp », « vers mp3 », « détourer »… les outils de ConvertDock apparaissent dans les résultats.
 - **Recherche naturelle** : « pdf en png », « wav vers mp3 », « heic en jpg »… Si un format n'est pas disponible (MKV, OGG…), l'app l'explique et propose l'équivalent.
-- **123 outils** : détourage automatique et manuel, PNG → SVG, OCR, transcription et sous-titres, lecture à voix haute, pack favicon, **MP3** et **WebP**, conversions d'images, vidéo (ProRes, vitesse, rotation), audio (Opus, sonnerie iPhone), documents, PDF, 3D (USDZ, STL, OBJ), données (YAML), archives (DMG, TAR.GZ), **trim audio/vidéo**.
+- **154 outils** : détourage automatique et manuel, PNG → SVG, OCR, transcription et sous-titres, lecture à voix haute, pack favicon, **MP3** et **WebP**, conversions d'images, vidéo (ProRes, vitesse, rotation), audio (Opus, sonnerie iPhone), documents (dont EPUB), PDF (mot de passe, numéros de page, filigrane, PDF → Word), 3D (USDZ, STL, OBJ), données (YAML, Excel → CSV, SQLite → CSV), archives (**RAR**, **7z**, ISO, DMG, ZIP avec mot de passe), QR codes, palette de couleurs, compression vidéo pour l'e-mail, **trim audio/vidéo**.
 - **Aperçu avant/après** de chaque résultat image, et bouton **Retoucher** après un détourage.
 - 100 % local, aucune dépendance.
 

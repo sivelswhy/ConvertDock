@@ -39,6 +39,10 @@ enum CommandLineInterface {
             parameters.trimEnd = Double(rest[i + 2])
             rest.removeSubrange(i...(i + 2))
         }
+        if let i = rest.firstIndex(of: "--text"), i + 1 < rest.count {
+            parameters.text = rest[i + 1]
+            rest.removeSubrange(i...(i + 1))
+        }
         let urls = rest.map { URL(fileURLWithPath: $0).standardizedFileURL }
         guard tool.accepts(all: urls) else {
             fputs(L("“%@” does not accept these files.", tool.displayTitle) + "\n", stderr)

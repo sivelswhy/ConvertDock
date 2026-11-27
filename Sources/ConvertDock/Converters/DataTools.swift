@@ -158,6 +158,87 @@ enum DataTools {
                     return out
                 }
             },
+            Tool(id: "data.checksum.md5", title: "Compute MD5 checksum", subtitle: "Classic fingerprint, for downloads",
+                 symbol: "checkmark.shield", category: .data, inputs: [.data], keywords: ["hash", "md5", "checksum", "empreinte", "intégrité"]) { inputs, ctx in
+                try inputs.map { url in
+                    let out = ctx.output(for: url, ext: "md5")
+                    try Shell.run("/sbin/md5", ["-r", url.path]).write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "data.hexdump", title: "Hex dump", subtitle: "Raw bytes, readable → .txt",
+                 symbol: "number.square", category: .data, inputs: [.data], keywords: ["hex", "hexadécimal", "xxd", "octets", "binaire", "dump"]) { inputs, ctx in
+                try inputs.map { url in
+                    let out = ctx.output(for: url, ext: "txt", suffix: "hex")
+                    try Shell.run("/usr/bin/xxd", [url.path]).write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "data.xml.to.json", title: "XML → JSON", subtitle: "Attributes as @name, text as #text", symbol: "curlybraces",
+                 category: .data, inputs: [.xml], keywords: ["xml", "json", "convertir", "rss", "svg"]) { inputs, ctx in
+                try inputs.map { url in
+                    let object = try XMLToJSON.convert(try Data(contentsOf: url))
+                    let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+                    let out = ctx.output(for: url, ext: "json")
+                    try data.write(to: out)
+                    return out
+                }
+            },
+            Tool(id: "data.csv.to.tsv", title: "CSV → TSV", subtitle: "Tab-separated", symbol: "tablecells",
+                 category: .data, inputs: [.commaSeparatedText], excludes: [.tabSeparatedText], keywords: ["csv", "tsv", "tabulation", "tab"]) { inputs, ctx in
+                try inputs.map { url in
+                    let rows = CSV.parse(try String(contentsOf: url, encoding: .utf8))
+                    let clean = { (v: String) in v.replacingOccurrences(of: "\t", with: " ").replacingOccurrences(of: "\n", with: " ") }
+                    let out = ctx.output(for: url, ext: "tsv")
+                    try (rows.map { $0.map(clean).joined(separator: "\t") }.joined(separator: "\n") + "\n").write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "data.tsv.to.csv", title: "TSV → CSV", subtitle: "Comma-separated", symbol: "tablecells",
+                 category: .data, inputs: [.tabSeparatedText], keywords: ["tsv", "csv", "tabulation", "excel"]) { inputs, ctx in
+                try inputs.map { url in
+                    let rows = CSV.parse(try String(contentsOf: url, encoding: .utf8), separator: "\t")
+                    let out = ctx.output(for: url, ext: "csv")
+                    try (rows.map { $0.map(CSV.escape).joined(separator: ",") }.joined(separator: "\n") + "\n").write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "data.xlsx.to.csv", title: "Excel (XLSX) → CSV", subtitle: "One CSV per sheet", symbol: "tablecells",
+                 category: .data, inputs: [.xlsx], inputExtensions: ["xlsx"], keywords: ["excel", "xlsx", "csv", "tableur", "numbers", "feuille"]) { inputs, ctx in
+                try inputs.map { url in
+                    let sheets = try XLSX.sheets(url)
+                    guard !sheets.isEmpty else { throw ToolError.failed(L("Empty CSV.")) }
+                    let csv = { (rows: [[String]]) in rows.map { $0.map(CSV.escape).joined(separator: ",") }.joined(separator: "\n") + "\n" }
+                    if sheets.count == 1 {
+                        let out = ctx.output(for: url, ext: "csv")
+                        try csv(sheets[0].rows).write(to: out, atomically: true, encoding: .utf8)
+                        return out
+                    }
+                    let folder = try PDFTools.makeFolder(for: url, name: "CSV")
+                    for sheet in sheets {
+                        let name = sheet.name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+                        try csv(sheet.rows).write(to: folder.appendingPathComponent(name + ".csv"), atomically: true, encoding: .utf8)
+                    }
+                    return folder
+                }
+            },
+            Tool(id: "data.sqlite.to.csv", title: "SQLite database → CSV", subtitle: "One CSV per table", symbol: "cylinder.split.1x2",
+                 category: .data, inputs: [], inputExtensions: ["sqlite", "sqlite3", "db"],
+                 keywords: ["sqlite", "base de données", "database", "db", "csv", "tables", "export"]) { inputs, ctx in
+                try inputs.map { url in
+                    let names = try Shell.run("/usr/bin/sqlite3", ["-readonly", url.path,
+                        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"])
+                        .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+                    guard !names.isEmpty else { throw ToolError.failed(L("No tables in this database.")) }
+                    let folder = try PDFTools.makeFolder(for: url, name: "CSV")
+                    for name in names {
+                        let quoted = "\"" + name.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+                        let csv = try Shell.run("/usr/bin/sqlite3", ["-readonly", "-csv", "-header", url.path, "SELECT * FROM \(quoted)"])
+                        try csv.write(to: folder.appendingPathComponent(name.replacingOccurrences(of: "/", with: "-") + ".csv"), atomically: true, encoding: .utf8)
+                    }
+                    return folder
+                }
+            },
         ]
     }
 
@@ -232,10 +313,13 @@ enum CSV {
 
 enum Shell {
     @discardableResult
-    static func run(_ executable: String, _ arguments: [String]) throws -> String {
+    static func run(_ executable: String, _ arguments: [String], in directory: URL? = nil) throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
+        process.currentDirectoryURL = directory
+        // Pas d'entrée : un outil qui demanderait une saisie (mot de passe…) échoue au lieu de bloquer.
+        process.standardInput = FileHandle.nullDevice
         let pipe = Pipe(), errors = Pipe()
         process.standardOutput = pipe
         process.standardError = errors
@@ -247,5 +331,131 @@ enum Shell {
             throw ToolError.failed(String(decoding: errorOutput, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
         }
         return String(decoding: output, as: UTF8.self)
+    }
+}
+
+/// XML → objets JSON : chaque élément devient un dictionnaire (attributs « @nom », texte « #text »),
+/// les enfants répétés deviennent des tableaux, un élément ne contenant que du texte devient une chaîne.
+final class XMLToJSON: NSObject, XMLParserDelegate {
+    private var stack: [(name: String, object: [String: Any], text: String)] = [("", [:], "")]
+
+    static func convert(_ data: Data) throws -> Any {
+        let parser = XMLParser(data: data)
+        let delegate = XMLToJSON()
+        parser.delegate = delegate
+        guard parser.parse() else {
+            throw ToolError.failed(parser.parserError?.localizedDescription ?? L("Invalid XML."))
+        }
+        return delegate.stack[0].object
+    }
+
+    func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String] = [:]) {
+        stack.append((name, Dictionary(uniqueKeysWithValues: attributes.map { ("@" + $0.key, $0.value as Any) }), ""))
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) { stack[stack.count - 1].text += string }
+    func parser(_ parser: XMLParser, foundCDATA block: Data) { stack[stack.count - 1].text += String(decoding: block, as: UTF8.self) }
+
+    func parser(_ parser: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
+        let element = stack.removeLast()
+        let text = element.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        var value: Any = element.object
+        if element.object.isEmpty { value = text } else if !text.isEmpty { var o = element.object; o["#text"] = text; value = o }
+        var parent = stack[stack.count - 1].object
+        if let existing = parent[name] {
+            parent[name] = (existing as? [Any] ?? [existing]) + [value]
+        } else {
+            parent[name] = value
+        }
+        stack[stack.count - 1].object = parent
+    }
+}
+
+/// Lecture minimale d'un classeur Excel : un .xlsx est un ZIP de fichiers XML.
+/// shortcut: les dates restent des numéros de série Excel et les formules donnent leur dernière valeur calculée.
+enum XLSX {
+    struct Sheet { let name: String; let rows: [[String]] }
+
+    static func sheets(_ url: URL) throws -> [Sheet] {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Shell.run("/usr/bin/ditto", ["-x", "-k", url.path, folder.path])
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let xl = folder.appendingPathComponent("xl")
+        var shared: [String] = []
+        if let data = try? Data(contentsOf: xl.appendingPathComponent("sharedStrings.xml")) {
+            let reader = Reader(shared: [])
+            _ = reader.parse(data)
+            shared = reader.strings
+        }
+        // Ordre et noms des feuilles : workbook.xml → relations → fichiers.
+        let rels = try Reader.attributes(of: "Relationship", in: Data(contentsOf: xl.appendingPathComponent("_rels/workbook.xml.rels")))
+        let targets = Dictionary(rels.compactMap { a in a["Id"].flatMap { id in a["Target"].map { (id, $0) } } }, uniquingKeysWith: { a, _ in a })
+        return try Reader.attributes(of: "sheet", in: Data(contentsOf: xl.appendingPathComponent("workbook.xml"))).compactMap { sheet in
+            guard let id = sheet["r:id"], var target = targets[id] else { return nil }
+            target = target.hasPrefix("/") ? String(target.dropFirst()) : "xl/" + target
+            guard let data = try? Data(contentsOf: folder.appendingPathComponent(target)) else { return nil }
+            let reader = Reader(shared: shared)
+            return Sheet(name: sheet["name"] ?? "Sheet", rows: reader.parse(data))
+        }
+    }
+
+    private final class Reader: NSObject, XMLParserDelegate {
+        let shared: [String]
+        var strings: [String] = []
+        private var grid: [Int: [Int: String]] = [:]
+        private var row = 0, column = 0, cellType = "", text = "", inValue = false, inString = false
+        private var collected: [[String: String]] = []
+        private var wanted = ""
+
+        init(shared: [String]) { self.shared = shared }
+
+        static func attributes(of element: String, in data: Data) -> [[String: String]] {
+            let reader = Reader(shared: [])
+            reader.wanted = element
+            let parser = XMLParser(data: data)
+            parser.delegate = reader
+            parser.parse()
+            return reader.collected
+        }
+
+        func parse(_ data: Data) -> [[String]] {
+            let parser = XMLParser(data: data)
+            parser.delegate = self
+            parser.parse()
+            guard let lastRow = grid.keys.max(), lastRow >= 1 else { return [] }
+            let width = (grid.values.compactMap { $0.keys.max() }.max() ?? 0) + 1
+            return (1...lastRow).map { r in (0..<width).map { grid[r]?[$0] ?? "" } }
+        }
+
+        func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String] = [:]) {
+            if name == wanted { collected.append(attributes) }
+            switch name {
+            case "si": text = ""; inString = true
+            case "row": row = Int(attributes["r"] ?? "") ?? row + 1; column = -1
+            case "c":
+                let ref = attributes["r"] ?? ""
+                let letters = ref.prefix { $0.isLetter }.uppercased()
+                column = letters.isEmpty ? column + 1 : letters.unicodeScalars.reduce(0) { $0 * 26 + Int($1.value) - 64 } - 1
+                cellType = attributes["t"] ?? ""
+                text = ""
+            case "v", "t": inValue = true
+            default: break
+            }
+        }
+
+        func parser(_ parser: XMLParser, foundCharacters string: String) { if inValue { text += string } }
+
+        func parser(_ parser: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
+            switch name {
+            case "v", "t": inValue = false
+            case "si": strings.append(text); inString = false
+            case "c" where !inString:
+                var value = text
+                if cellType == "s", let index = Int(text), index < shared.count { value = shared[index] }
+                if cellType == "b" { value = text == "1" ? "TRUE" : "FALSE" }
+                if !value.isEmpty { grid[row, default: [:]][column] = value }
+            default: break
+            }
+        }
     }
 }

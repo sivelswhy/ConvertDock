@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 /// Conversions de documents texte via le système de texte Cocoa (RTF, DOCX, ODT, HTML, Markdown, PDF…).
 enum DocumentTools {
-    private static let readable: [UTType] = [.rtf, .rtfd, .html, .plainText, .docx, .doc, .odt, .webArchive, .markdown, .flatRTFD]
+    private static let readable: [UTType] = [.rtf, .rtfd, .html, .plainText, .docx, .doc, .odt, .webArchive, .markdown, .flatRTFD, .epub]
     private static let sourceCode: [UTType] = [.sourceCode, .json, .xml, .propertyList, .commaSeparatedText, .yaml]
 
     private struct Target {
@@ -102,6 +102,14 @@ enum DocumentTools {
                 .characterEncoding: String.Encoding.utf8.rawValue,
             ], documentAttributes: nil)
         }
+        if url.pathExtension.lowercased() == "epub" {
+            let (html, base) = try EPUB.html(url)
+            return try NSAttributedString(data: Data(html.utf8), options: [
+                .documentType: NSAttributedString.DocumentType.html,
+                .characterEncoding: String.Encoding.utf8.rawValue,
+                .baseURL: base,
+            ], documentAttributes: nil)
+        }
         return try NSAttributedString(url: url, options: [:], documentAttributes: nil)
     }
 
@@ -164,5 +172,46 @@ enum DocumentTools {
         guard operation.run(), FileManager.default.fileExists(atPath: out.path) else {
             throw ToolError.failed(L("Failed to create the PDF."))
         }
+    }
+}
+
+/// Livre EPUB : chapitres lus dans l'ordre de lecture (spine) et réunis en une seule page HTML.
+enum EPUB {
+    static func html(_ url: URL) throws -> (html: String, base: URL) {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("epub-" + UUID().uuidString)
+        try Shell.run("/usr/bin/ditto", ["-x", "-k", url.path, folder.path])
+        // Le dossier est gardé jusqu'à la fin de la session : les images du livre y sont référencées.
+        let container = try String(contentsOf: folder.appendingPathComponent("META-INF/container.xml"), encoding: .utf8)
+        guard let opfPath = attribute("full-path", in: container) else { throw ToolError.unreadable(url) }
+        let opfURL = folder.appendingPathComponent(opfPath)
+        let opf = try String(contentsOf: opfURL, encoding: .utf8)
+        var hrefs: [String: String] = [:]
+        for item in tags("item", in: opf) {
+            if let id = attribute("id", in: item), let href = attribute("href", in: item) { hrefs[id] = href }
+        }
+        let base = opfURL.deletingLastPathComponent()
+        var body = ""
+        for ref in tags("itemref", in: opf) {
+            guard let id = attribute("idref", in: ref), let href = hrefs[id] else { continue }
+            let chapter = base.appendingPathComponent(href.removingPercentEncoding ?? href)
+            guard let text = try? String(contentsOf: chapter, encoding: .utf8) else { continue }
+            let content = text.range(of: "(?s)<body[^>]*>(.*)</body>", options: .regularExpression)
+                .map { String(text[$0]) } ?? text
+            body += content.replacingOccurrences(of: "</?body[^>]*>", with: "", options: .regularExpression) + "\n"
+        }
+        guard !body.isEmpty else { throw ToolError.unreadable(url) }
+        return ("<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body>\(body)</body></html>", base)
+    }
+
+    private static func tags(_ name: String, in text: String) -> [String] {
+        let regex = try! NSRegularExpression(pattern: "<(?:\\w+:)?\(name)\\b[^>]*>")
+        return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { Range($0.range, in: text).map { String(text[$0]) } }
+    }
+
+    private static func attribute(_ name: String, in tag: String) -> String? {
+        let regex = try! NSRegularExpression(pattern: "\\s\(name)\\s*=\\s*[\"']([^\"']*)[\"']")
+        guard let match = regex.firstMatch(in: tag, range: NSRange(tag.startIndex..., in: tag)),
+              let range = Range(match.range(at: 1), in: tag) else { return nil }
+        return String(tag[range])
     }
 }

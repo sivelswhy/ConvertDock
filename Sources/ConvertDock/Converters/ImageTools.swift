@@ -2,6 +2,7 @@ import AppKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import PDFKit
+import Vision
 import UniformTypeIdentifiers
 
 enum ImageTools {
@@ -10,7 +11,7 @@ enum ImageTools {
     private static let svg = UTType.svg
 
     static var all: [Tool] {
-        conversions + transforms + combined
+        conversions + transforms + combined + extras
     }
 
     // MARK: Conversions de format
@@ -239,6 +240,31 @@ enum ImageTools {
                       suffix: L("mirrored")) { image in
                 try ImageIOHelpers.render(CIImage(cgImage: image).oriented(.upMirrored))
             },
+            transform(id: "image.rotate.left", title: "Rotate 90° left", subtitle: "Counterclockwise",
+                      symbol: "rotate.left", keywords: ["rotation", "pivoter", "tourner", "gauche"],
+                      suffix: L("rotated")) { image in
+                try ImageIOHelpers.render(CIImage(cgImage: image).oriented(.left))
+            },
+            transform(id: "image.flip.vertical", title: "Flip vertically", subtitle: "Upside-down mirror",
+                      symbol: "arrow.up.and.down.righttriangle.up.righttriangle.down", keywords: ["miroir", "flip", "retourner", "vertical"],
+                      suffix: L("mirrored")) { image in
+                try ImageIOHelpers.render(CIImage(cgImage: image).oriented(.downMirrored))
+            },
+            transform(id: "image.square", title: "Crop to square", subtitle: "Centered, for profile pictures",
+                      symbol: "crop", keywords: ["carré", "square", "recadrer", "crop", "avatar", "profil", "instagram"],
+                      suffix: L("square")) { image in
+                let side = min(image.width, image.height)
+                let rect = CGRect(x: (image.width - side) / 2, y: (image.height - side) / 2, width: side, height: side)
+                guard let cropped = image.cropping(to: rect) else { throw ToolError.failed(L("Failed to render the image.")) }
+                return cropped
+            },
+            transform(id: "image.invert", title: "Invert colors", subtitle: "Photo negative",
+                      symbol: "circle.righthalf.filled.inverse", keywords: ["inverser", "négatif", "invert", "couleurs"],
+                      suffix: L("inverted")) { image in
+                let filter = CIFilter.colorInvert()
+                filter.inputImage = CIImage(cgImage: image)
+                return try ImageIOHelpers.render(filter.outputImage!)
+            },
             transform(id: "image.strip", title: "Remove metadata", subtitle: "Strips EXIF, GPS and camera info",
                       symbol: "location.slash", keywords: ["exif", "gps", "métadonnées", "vie privée", "metadata"],
                       suffix: L("no metadata")) { $0 },
@@ -265,6 +291,155 @@ enum ImageTools {
                 return [out]
             },
         ]
+    }
+
+    // MARK: Autres outils
+
+    private static var extras: [Tool] {
+        [
+            Tool(id: "image.watermark", title: "Add a watermark", subtitle: "Your text in the bottom-right corner",
+                 symbol: "signature", category: .image, inputs: [.image],
+                 keywords: ["filigrane", "watermark", "copyright", "signature", "texte", "protéger"],
+                 configure: { url in await TextPrompt.watermark(url) }) { inputs, ctx in
+                let label = ctx.parameters.text ?? "©"
+                return try inputs.map { url in
+                    let image = try ImageIOHelpers.load(url)
+                    guard let canvas = ImageIOHelpers.context(width: image.width, height: image.height) else {
+                        throw ToolError.failed(L("Failed to render the image."))
+                    }
+                    canvas.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+                    let shadow = NSShadow()
+                    shadow.shadowColor = NSColor.black.withAlphaComponent(0.6)
+                    shadow.shadowBlurRadius = 4
+                    let size = max(12, CGFloat(min(image.width, image.height)) / 22)
+                    let text = NSAttributedString(string: label, attributes: [
+                        .font: NSFont.boldSystemFont(ofSize: size), .foregroundColor: NSColor.white.withAlphaComponent(0.85), .shadow: shadow,
+                    ])
+                    NSGraphicsContext.saveGraphicsState()
+                    NSGraphicsContext.current = NSGraphicsContext(cgContext: canvas, flipped: false)
+                    let textSize = text.size()
+                    text.draw(at: CGPoint(x: CGFloat(image.width) - textSize.width - size, y: size * 0.8))
+                    NSGraphicsContext.restoreGraphicsState()
+                    guard let result = canvas.makeImage() else { throw ToolError.failed(L("Failed to render the image.")) }
+                    let (type, ext) = ImageIOHelpers.sameFormat(for: url)
+                    let out = ctx.output(for: url, ext: ext, suffix: L("watermarked"))
+                    try ImageIOHelpers.write(result, to: out, type: type, quality: 0.92)
+                    return out
+                }
+            },
+            Tool(id: "image.exif", title: "Show metadata (EXIF)", subtitle: "Camera, date, GPS, settings → .txt",
+                 symbol: "info.circle", category: .image, inputs: [.image],
+                 keywords: ["exif", "métadonnées", "metadata", "gps", "appareil", "infos", "date"]) { inputs, ctx in
+                try inputs.map { url in
+                    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                          let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] else { throw ToolError.unreadable(url) }
+                    var lines = [url.lastPathComponent, ""]
+                    func walk(_ dict: [String: Any], prefix: String) {
+                        for key in dict.keys.sorted() {
+                            let value = dict[key]!
+                            if let child = value as? [String: Any] {
+                                walk(child, prefix: "\(prefix)\(key.replacingOccurrences(of: "{", with: "").replacingOccurrences(of: "}", with: "")) › ")
+                            } else if let array = value as? [Any] {
+                                lines.append("\(prefix)\(key): \(array.map { "\($0)" }.joined(separator: ", "))")
+                            } else {
+                                lines.append("\(prefix)\(key): \(value)")
+                            }
+                        }
+                    }
+                    walk(props, prefix: "")
+                    let out = ctx.output(for: url, ext: "txt", suffix: "EXIF")
+                    try lines.joined(separator: "\n").write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "image.palette", title: "Extract color palette", subtitle: "8 dominant colors → SVG + hex codes",
+                 symbol: "paintpalette", category: .image, inputs: [.image, svg],
+                 keywords: ["palette", "couleurs", "colors", "hex", "nuancier", "dominantes", "design"]) { inputs, ctx in
+                try inputs.flatMap { url in
+                    let colors = try palette(ImageIOHelpers.load(url, maxPixelSize: 128))
+                    let hex = colors.map { String(format: "#%02X%02X%02X", $0.r, $0.g, $0.b) }
+                    let swatches = hex.enumerated().map { i, color in
+                        "<rect x=\"\(i * 100)\" y=\"0\" width=\"100\" height=\"100\" fill=\"\(color)\"/>"
+                        + "<text x=\"\(i * 100 + 50)\" y=\"125\" text-anchor=\"middle\" font-family=\"Menlo\" font-size=\"13\">\(color)</text>"
+                    }.joined(separator: "\n")
+                    let svgText = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"\(hex.count * 100)\" height=\"140\">\n"
+                        + "<rect width=\"100%\" height=\"100%\" fill=\"white\"/>\n\(swatches)\n</svg>\n"
+                    let svgOut = ctx.output(for: url, ext: "svg", suffix: L("palette"))
+                    try svgText.write(to: svgOut, atomically: true, encoding: .utf8)
+                    let txtOut = ctx.output(for: url, ext: "txt", suffix: L("palette"))
+                    try (hex.joined(separator: "\n") + "\n").write(to: txtOut, atomically: true, encoding: .utf8)
+                    return [svgOut, txtOut]
+                }
+            },
+            Tool(id: "image.qr.read", title: "Read QR code / barcode", subtitle: "Content → .txt",
+                 symbol: "qrcode.viewfinder", category: .image, inputs: [.image, .pdf],
+                 keywords: ["qr", "qr code", "code-barres", "barcode", "scanner", "lire", "décoder"]) { inputs, ctx in
+                try inputs.map { url in
+                    let request = VNDetectBarcodesRequest()
+                    try VNImageRequestHandler(cgImage: try ImageIOHelpers.load(url), options: [:]).perform([request])
+                    let payloads = (request.results ?? []).compactMap(\.payloadStringValue)
+                    guard !payloads.isEmpty else { throw ToolError.failed(L("No QR code or barcode detected.")) }
+                    let out = ctx.output(for: url, ext: "txt", suffix: "QR")
+                    try (NSOrderedSet(array: payloads).array as! [String]).joined(separator: "\n").write(to: out, atomically: true, encoding: .utf8)
+                    return out
+                }
+            },
+            Tool(id: "image.qr.make", title: "Create a QR code", subtitle: "From the text or link in the file → PNG",
+                 symbol: "qrcode", category: .image, inputs: [.plainText, .internetLocation],
+                 keywords: ["qr", "qr code", "générer", "créer", "lien", "url", "wifi"]) { inputs, ctx in
+                try inputs.map { url in
+                    var text = try String(contentsOf: url, encoding: .utf8)
+                    if url.pathExtension.lowercased() == "webloc",
+                       let plist = try? PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil) as? [String: Any],
+                       let link = plist["URL"] as? String { text = link }
+                    text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let filter = CIFilter.qrCodeGenerator()
+                    filter.message = Data(text.utf8)
+                    filter.correctionLevel = "M"
+                    guard !text.isEmpty, let code = filter.outputImage else { throw ToolError.failed(L("Text too long for a QR code.")) }
+                    // Agrandi sans lissage, avec une marge blanche de 4 modules.
+                    let scale = max(1, (1024 / code.extent.width).rounded(.down))
+                    let scaled = code.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                    let margin = 4 * scale
+                    let framed = scaled.transformed(by: CGAffineTransform(translationX: margin, y: margin))
+                        .composited(over: CIImage(color: .white).cropped(to: scaled.extent.insetBy(dx: -margin, dy: -margin).offsetBy(dx: margin, dy: margin)))
+                    let out = ctx.output(for: url, ext: "png", suffix: "QR")
+                    try ImageIOHelpers.write(try ImageIOHelpers.render(framed), to: out, type: .png)
+                    return out
+                }
+            },
+        ]
+    }
+
+    /// Couleurs dominantes : histogramme sur une grille de 16 niveaux par canal, couleurs trop proches fusionnées.
+    static func palette(_ image: CGImage, count: Int = 8) throws -> [(r: Int, g: Int, b: Int)] {
+        let w = image.width, h = image.height
+        guard let canvas = ImageIOHelpers.context(width: w, height: h) else { throw ToolError.failed(L("Could not read pixels.")) }
+        canvas.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        guard let data = canvas.data else { throw ToolError.failed(L("Could not read pixels.")) }
+        let pixels = data.bindMemory(to: UInt8.self, capacity: canvas.bytesPerRow * h)
+        var buckets: [Int: (n: Int, r: Int, g: Int, b: Int)] = [:]
+        for y in 0..<h {
+            for x in 0..<w {
+                let i = y * canvas.bytesPerRow + x * 4
+                let a = Int(pixels[i + 3])
+                guard a > 127 else { continue }
+                // Prémultiplié : on divise par l'alpha.
+                let r = Int(pixels[i]) * 255 / a, g = Int(pixels[i + 1]) * 255 / a, b = Int(pixels[i + 2]) * 255 / a
+                let key = (r >> 4) << 8 | (g >> 4) << 4 | (b >> 4)
+                let e = buckets[key] ?? (0, 0, 0, 0)
+                buckets[key] = (e.n + 1, e.r + r, e.g + g, e.b + b)
+            }
+        }
+        var result: [(r: Int, g: Int, b: Int)] = []
+        for e in buckets.values.sorted(by: { $0.n > $1.n }) {
+            let c = (r: e.r / e.n, g: e.g / e.n, b: e.b / e.n)
+            let distinct = result.allSatisfy { abs($0.r - c.r) + abs($0.g - c.g) + abs($0.b - c.b) > 60 }
+            if distinct { result.append(c) }
+            if result.count == count { break }
+        }
+        guard !result.isEmpty else { throw ToolError.failed(L("Could not read pixels.")) }
+        return result
     }
 
     /// Pack favicon complet pour un site web, avec le code HTML à coller.

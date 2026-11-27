@@ -35,6 +35,40 @@ enum AudioTools {
             encoded(id: "audio.to.aac96", title: "Convert to M4A 96 kbps", subtitle: "Light AAC, for voice and sharing",
                     ext: "m4a", suffix: "96k", type: nil, format: kAudioFormatMPEG4AAC, bitRate: 96_000,
                     keywords: ["aac", "m4a", "96", "léger", "compresser", "débit", "bitrate"]),
+            Tool(id: "audio.normalize", title: "Normalize volume", subtitle: "Loudest peak at −1 dB → M4A",
+                 symbol: "speaker.wave.3", category: .audio, inputs: [.audio],
+                 keywords: ["normaliser", "volume", "normalize", "gain", "fort", "niveau", "amplifier"]) { inputs, ctx in
+                try inputs.map { url in
+                    let out = ctx.output(for: url, ext: "m4a", suffix: L("normalized"))
+                    try rewrite(url, to: out, mono: false, normalize: true, progress: ctx.progress)
+                    return out
+                }
+            },
+            Tool(id: "audio.mono", title: "Convert to mono", subtitle: "Channels mixed into one → M4A",
+                 symbol: "speaker", category: .audio, inputs: [.audio],
+                 keywords: ["mono", "stéréo", "stereo", "canal", "voix", "podcast"]) { inputs, ctx in
+                try inputs.map { url in
+                    let out = ctx.output(for: url, ext: "m4a", suffix: "mono")
+                    try rewrite(url, to: out, mono: true, normalize: false, progress: ctx.progress)
+                    return out
+                }
+            },
+            Tool(id: "audio.merge", title: "Join audio files", subtitle: "One after the other, in order → M4A",
+                 symbol: "waveform.path.badge.plus", category: .audio, inputs: [.audio],
+                 keywords: ["fusionner", "joindre", "assembler", "concaténer", "merge", "join", "combiner"],
+                 combinesInputs: true, minimumInputs: 2) { inputs, ctx in
+                let composition = AVMutableComposition()
+                let track = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+                for url in inputs {
+                    let asset = AVURLAsset(url: url)
+                    guard let source = try await asset.loadTracks(withMediaType: .audio).first else { throw ToolError.unreadable(url) }
+                    let range = CMTimeRange(start: .zero, duration: try await asset.load(.duration))
+                    try track?.insertTimeRange(range, of: source, at: composition.duration)
+                }
+                let out = ctx.output(for: inputs[0], ext: "m4a", suffix: L("and %d more", inputs.count - 1))
+                try await VideoTools.exportAsset(composition, preset: AVAssetExportPresetAppleM4A, to: out, type: .m4a, progress: ctx.progress)
+                return [out]
+            },
         ]
     }
 
@@ -82,6 +116,54 @@ enum AudioTools {
                 return out
             }
         }
+    }
+
+    /// Mixage mono et/ou normalisation du pic à −1 dBFS, puis encodage AAC 256 kbit/s.
+    static func rewrite(_ url: URL, to out: URL, mono: Bool, normalize: Bool, progress: @Sendable (Double) -> Void) throws {
+        let input = try AVAudioFile(forReading: url)
+        let format = input.processingFormat
+        let capacity: AVAudioFrameCount = 32_768
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: capacity),
+              let outFormat = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: mono ? 1 : format.channelCount),
+              let mixed = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: capacity) else { throw ToolError.failed(L("Not enough memory.")) }
+        let channels = Int(format.channelCount)
+        var gain: Float = 1
+        if normalize {
+            var peak: Float = 0
+            while input.framePosition < input.length {
+                try input.read(into: buffer, frameCount: capacity)
+                if buffer.frameLength == 0 { break }
+                for c in 0..<channels {
+                    let samples = buffer.floatChannelData![c]
+                    for i in 0..<Int(buffer.frameLength) { peak = max(peak, abs(samples[i])) }
+                }
+            }
+            guard peak > 0 else { throw ToolError.failed(L("This file is silent.")) }
+            gain = 0.891 / peak
+            input.framePosition = 0
+        }
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".caf")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        do {
+            let writer = try AVAudioFile(forWriting: tmp, settings: outFormat.settings, commonFormat: .pcmFormatFloat32, interleaved: false)
+            while input.framePosition < input.length {
+                try input.read(into: buffer, frameCount: capacity)
+                let frames = Int(buffer.frameLength)
+                if frames == 0 { break }
+                let source = buffer.floatChannelData!, target = mixed.floatChannelData!
+                for c in 0..<Int(outFormat.channelCount) {
+                    for i in 0..<frames {
+                        var sample: Float = 0
+                        if mono { for k in 0..<channels { sample += source[k][i] }; sample /= Float(channels) } else { sample = source[c][i] }
+                        target[c][i] = min(1, max(-1, sample * gain))
+                    }
+                }
+                mixed.frameLength = buffer.frameLength
+                try writer.write(from: mixed)
+                progress(0.5 * Double(input.framePosition) / Double(max(1, input.length)))
+            }
+        }
+        try transcode(tmp, to: out, settings: [AVFormatIDKey: kAudioFormatMPEG4AAC, AVEncoderBitRateKey: 256_000]) { progress(0.5 + $0 / 2) }
     }
 
     /// Transcodage par blocs via AVAudioFile (le format est déduit de l'extension de sortie).

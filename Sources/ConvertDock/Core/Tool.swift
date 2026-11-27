@@ -52,6 +52,8 @@ struct ToolParameters: Sendable {
     /// Plage à conserver, en secondes.
     var trimStart: Double?
     var trimEnd: Double?
+    /// Texte saisi par l'utilisateur (mot de passe, filigrane…).
+    var text: String?
 }
 
 /// Contexte passé à un outil pendant son exécution.
@@ -207,6 +209,8 @@ extension UTType {
     static let doc = UTType("com.microsoft.word.doc") ?? .data
     static let odt = UTType("org.oasis-open.opendocument.text") ?? .data
     static let webArchive = UTType("com.apple.webarchive") ?? .data
+    static let epub = UTType("org.idpf.epub-container") ?? .data
+    static let xlsx = UTType("org.openxmlformats.spreadsheetml.sheet") ?? .data
     static let avif = UTType("public.avif") ?? .image
     static let csv = UTType.commaSeparatedText
     static let flac = UTType("org.xiph.flac") ?? .audio
